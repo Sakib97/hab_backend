@@ -1,0 +1,31 @@
+-> To modify existing tables in SQLAlchemy, you typically use a migration tool like Alembic. 
+
+-> SQLAlchemy itself doesn't directly modify existing tables with schema changes 
+    (such as adding, removing, or altering columns) via create_all(); 
+    it only creates tables that don't already exist.
+
+Steps to Modify Existing Tables with Alembic:
+==============================================
+1. pip install alembic
+2. alembic init alembic (command for initializing alembic)
+
+3. In "alembic.ini" file - 
+    modify the db url - 
+    sqlalchemy.url = postgresql://postgres:123456@localhost:5432/history_and_beyond
+
+4. In alembic/env.py file - 
+    add these two lines - 
+    from core.database import Base
+    target_metadata = Base.metadata
+
+5. Make Changes to Your SQLAlchemy Models (like add column, alter col name)
+
+6. alembic revision --autogenerate -m "Message"  (to Generate a New Alembic Migration Script)
+    This will create a new migration script in the "alembic/versions/" directory.
+
+7. Review the Migration
+    upgrade(): contains the "forward migration" logic: adding columns, modifying columns, creating tables, etc.
+    downgrade(): contains the "rollback" logic: removing columns, undoing modifications, dropping tables, etc.
+
+8. alembic upgrade head (to apply the migration)
+

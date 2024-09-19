@@ -1,0 +1,31 @@
+Step 1: 
+Open DBeaver and Connect to PostgreSQL
+1. Launch DBeaver.
+2. Create a connection to your PostgreSQL server:
+    - Click on the Database menu → New Connection.
+    - Select PostgreSQL from the list and click Next.
+    - Enter the necessary connection details (host, port, database, user, password), and click Finish.
+
+Step 2: 
+Create a New Database in PostgreSQL
+1. Connect to an existing database (such as the postgres default database) by double-clicking on the connection in the Database Navigator.
+2. Open the SQL Editor:
+    - Right-click on the connection and select SQL Editor → Open SQL Script.
+3. Write the SQL command to create a new database:
+    - CREATE DATABASE <database_name>;
+4. Execute the SQL Script:
+    - Press CTRL+Enter (or click the Execute button in the toolbar) to run the SQL script and create the database.
+
+Step 3: 
+Open the New Database
+1. Refresh the Database Navigator:
+    - Right-click on the connection in the Database Navigator and choose Refresh (or press F5).
+2. Locate the New Database:
+    - You should now see the newly created database listed under the connection.
+3. Connect to the New Database:
+    - Double-click on the new database in the Database Navigator to open a connection to it.
+    - From here, you can start creating tables, running queries, etc.
+
+Database URL for SQLAlchemy:
+    - postgresql://<username>:<password>@<host>:<port>/<database_name>
+

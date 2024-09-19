@@ -1,0 +1,53 @@
+Example Flow:
+=============
+1. User logs in and receives an access token (valid for 15 minutes) and a refresh token (valid for 7 days).
+
+2. The user makes API requests using the access token.
+
+3. After 15 minutes, the access token expires. The next API request fails with a 401 error.
+
+4. The client uses the refresh token to request a new access token.
+
+5. The server verifies the refresh token and issues a new access token (and possibly a new refresh token).
+
+6. The client resumes making API requests with the new access token.
+
+7. After 7 days (or earlier if the user logs out), the refresh token expires, and the user must log in again to obtain new tokens.
+=========================================================
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+How Refresh Token mechanism is implemented here:
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Step 1: User Logs in, url "/token"
+-----------------------------------
+=> create_access_token() Func:  
+    .We create both access_token and refresh_token on Login.
+    .Token payload is only User's email and expairy date
+    .Func returns the token and exp date
+
+=> add_or_update_refresh_token() Func: 
+    .We store the refresh_token to the DB
+    .Check if an entry with the given email already exists
+    .If the entry exists, only update the token (meaning they already logged in before)
+    .If the entry doesn't exist, create a new one (meaning first login)
+    .Func returns the new or updated object
+
+=> "/token" Response: 
+        { "email":user.email, 
+             "role": role_code_as_list,
+            "access_token": access_token, 
+            "refresh_token": refresh_token, 
+            "token_type": "bearer"}
+
+Step 4: Using refresh_token to request new access_token
+-------------------------------------------------------
+url = "/refresh_token" 
+    - it requires the refresh_token in authorization header
+
+=> create_refreshed_access_token() Func
+    .First retrieve the refresh_token from authorization header
+    .Retrieve the email from token
+    .Retrieve the refresh_token stored in DB against that email
+    .If DB token matches with authorization header token, generate new access token
+    .Return this access token to "/refresh_token" url
