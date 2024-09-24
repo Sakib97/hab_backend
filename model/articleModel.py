@@ -13,6 +13,7 @@ class SubcategoryModel(Base):
     subcategory_id = Column(Integer, primary_key=True, index=True)
     subcategory_name = Column(String(255))
     category_id = Column(Integer)
+    category_name = Column(String(100))
     subcategory_slug = Column(String(255))
     subcategory_order = Column(Integer)
 
