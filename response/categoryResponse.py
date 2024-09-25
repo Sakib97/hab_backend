@@ -5,7 +5,7 @@ class CategoryResponse(BaseModel):
     category_name: str 
     category_slug: str 
     category_order: int 
-
+    is_enabled: bool
     class Config():
         orm_mode = True
 
@@ -16,6 +16,13 @@ class SubCategoryResponse(BaseModel):
     category_name: str 
     subcategory_slug: str
     subcategory_order: int 
-
+    is_enabled: bool
     class Config():
         orm_mode = True
+
+class TagResponse(BaseModel):
+    tag_id: int
+    tag_name: str
+    tag_slug: str 
+    class Config():
+        from_attributes = True

@@ -11,3 +11,7 @@ class CreateSubCategoryRequest(BaseModel):
     category_name: str
     subcategory_slug: str
     subcategory_order: int
+
+class CreateTagRequest(BaseModel):
+    tag_name: str
+    tag_slug: str 

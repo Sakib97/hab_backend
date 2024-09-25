@@ -1,6 +1,6 @@
-from model.articleModel import CategoryModel, SubcategoryModel
+from model.articleModel import TagModel, CategoryModel, SubcategoryModel
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks, Depends
-from request.categoryRequest import CreateCategoryRequest, CreateSubCategoryRequest
+from request.categoryRequest import CreateTagRequest, CreateCategoryRequest, CreateSubCategoryRequest
 from service.userModule.userService import get_current_user_profile
 from model.userModel import UserRoleModel
 import ast
@@ -31,7 +31,8 @@ async def create_category(request: Request,
         new_category = CategoryModel(
              category_name=addCatReq.category_name,
              category_slug=addCatReq.category_slug,
-             category_order=addCatReq.category_order
+             category_order=addCatReq.category_order,
+             is_enabled=True
         )
 
         db.add(new_category)
@@ -87,4 +88,38 @@ async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRe
             detail=f"Internal server error: {e}"
             )
     
+async def create_tag(request: Request,
+                      addTagReq: CreateTagRequest,
+                      db):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_list = get_role_list(user_email, db)
 
+        # sadmin, editor, sub-editor can create tags
+        authorized_role_list = [1453,1260,1444]
+        
+        # Convert to sets and check for intersection
+        # If the intersection is non-empty, it evaluates to True; 
+        # otherwise, False.
+        if set(user_role_list) & set(authorized_role_list):
+            tag = db.query(TagModel).filter(TagModel.tag_name == addTagReq.tag_name).first()
+            if tag:
+                raise HTTPException(status_code=409, detail="Tag already exists !")
+
+            new_tag = TagModel(
+                tag_name=addTagReq.tag_name,
+                tag_slug=addTagReq.tag_slug
+            )
+            db.add(new_tag)
+            db.commit()
+            db.refresh(new_tag)     
+
+            return {"msg": "new tag created"}       
+        else:
+            raise HTTPException(status_code=409, detail="User not authorized to make this change !") 
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {e}"
+            )

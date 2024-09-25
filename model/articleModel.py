@@ -7,6 +7,7 @@ class CategoryModel(Base):
     category_name = Column(String(255))
     category_slug = Column(String(255))
     category_order = Column(Integer)
+    is_enabled = Column(Boolean)
 
 class SubcategoryModel(Base):
     __tablename__ = "subcategory"
@@ -16,6 +17,7 @@ class SubcategoryModel(Base):
     category_name = Column(String(100))
     subcategory_slug = Column(String(255))
     subcategory_order = Column(Integer)
+    is_enabled = Column(Boolean)
 
 class TagModel(Base):
     __tablename__ = "tag"

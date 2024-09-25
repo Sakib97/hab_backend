@@ -44,10 +44,11 @@
 
 # # print(MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM,MAIL_PORT, MAIL_SERVER, MAIL_FROM_NAME)
 
-role_list = [10,20,302]
-target = 30
-if target not in role_list:
-    exists = "nott"
+list_1 = [1453, 1260, 1444]
+list_2 = [2024, 1203]
+
+# Convert to sets and check for intersection
+if set(list_1) & set(list_2):
+    print(True)
 else:
-    exists = "Yess"
-print(exists)
+    print(False)
