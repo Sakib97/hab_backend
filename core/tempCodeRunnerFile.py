@@ -44,11 +44,24 @@
 
 # # print(MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM,MAIL_PORT, MAIL_SERVER, MAIL_FROM_NAME)
 
-list_1 = [1453, 1260, 1444]
-list_2 = [2024, 1203]
+# list_1 = [1453, 1260, 1444]
+# list_2 = [2024, 1203]
 
-# Convert to sets and check for intersection
-if set(list_1) & set(list_2):
-    print(True)
-else:
-    print(False)
+# # Convert to sets and check for intersection
+# if set(list_1) & set(list_2):
+#     print(True)
+# else:
+#     print(False)
+
+import ast
+list1 = "[1,2,3]"
+list2 = "['bd', 'me', 'eu']"
+
+list1 = ast.literal_eval(list1)
+list2 = ast.literal_eval(list2)
+
+# for i in range(len(list1)):
+#     print(list1[i], list2[i] )
+
+print(list2)
+print(str(list2))

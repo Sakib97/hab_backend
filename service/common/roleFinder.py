@@ -9,4 +9,4 @@ def get_role_list(user_email, db):
                             detail="User Role Not Found")
     
     role_code_as_list = ast.literal_eval(user_role.role_code_list)
-    return role_code_as_list
+    return user_role, role_code_as_list

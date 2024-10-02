@@ -4,6 +4,7 @@ from core.database import engine
 from api.userModule.userAPI import user_router
 from api.userModule.roleAPI import role_router
 from api.articleModule.categoryAPI import category_router
+from api.articleModule.articleAPI import article_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(role_router, prefix="/api/v1")
 app.include_router(category_router, prefix="/api/v1")
+app.include_router(article_router, prefix="/api/v1")
 
 # @app.on_event("startup")
 # def startup_event():

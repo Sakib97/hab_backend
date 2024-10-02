@@ -26,3 +26,16 @@ class PasswordResetEmailRequest(BaseModel):
 class PasswordResetTokenRequest(BaseModel):
     reset_token: str 
     new_password: str
+
+class CreateEditorRequest(BaseModel):
+    user_id: int 
+    user_email: str 
+    assigned_cat_id_list: str 
+    assigned_cat_name_list: str 
+
+class CreateAuthorRequest(BaseModel):
+    user_id: int 
+    user_email: str 
+    user_name: str 
+    assigned_cat_id_list: str 
+    assigned_cat_name_list: str 

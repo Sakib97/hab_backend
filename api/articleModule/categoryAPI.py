@@ -15,7 +15,9 @@ category_router = APIRouter(
     tags=["Category"])
 
 # create category
-@category_router.post("/create_category", dependencies=[Depends(JWTBearer())],status_code=status.HTTP_201_CREATED)
+@category_router.post("/create_category", 
+                      dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_201_CREATED)
 async def create_menu(request: Request,
                       categoryRequest: CreateCategoryRequest,
                       db: Session = Depends(get_db)):

@@ -17,7 +17,7 @@ async def create_category(request: Request,
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
         
-        role_list = get_role_list(user_email, db)
+        user_role, role_list = get_role_list(user_email, db)
 
         # checking if user is sadmin
         sadmin_role = 1453
@@ -52,7 +52,7 @@ async def create_category(request: Request,
 async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRequest, db):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
-        role_list = get_role_list(user_email, db)
+        user_role, role_list = get_role_list(user_email, db)
 
         sadmin_role = 1453
         if sadmin_role not in role_list:
@@ -93,7 +93,7 @@ async def create_tag(request: Request,
                       db):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
-        user_role_list = get_role_list(user_email, db)
+        user_role, user_role_list = get_role_list(user_email, db)
 
         # sadmin, editor, sub-editor can create tags
         authorized_role_list = [1453,1260,1444]
