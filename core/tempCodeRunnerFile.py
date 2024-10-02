@@ -63,5 +63,3 @@ list2 = ast.literal_eval(list2)
 # for i in range(len(list1)):
 #     print(list1[i], list2[i] )
 
-print(list2)
-print(str(list2))

@@ -10,7 +10,7 @@ from core.jwtHandler import verify_password, verify_user_access, create_access_t
 # from core.jwtHandler import get_current_user
 from request.userRequest import CreateEditorRequest, CreateUserRequest, UserLoginRequest, EditUserRequest, PasswordResetEmailRequest, PasswordResetTokenRequest
 from service.userModule.userService import reset_pass, get_reset_token_link, send_email_background, profile_edit, user_logout, create_user_account, get_current_user_profile, add_or_update_refresh_token
-from service.sadminModule.sadminService import create_editor
+from service.sadminModule.sadminService import create_editor_or_author
 from model.userModel import UserModel, UserRoleModel, RefreshTokenModel
 from core.jwtHandler import JWTBearer
 from core.jwtHandler import refresh_exp_sec
@@ -180,6 +180,16 @@ async def edit_profile(request: Request,
 async def editor_create(request: Request,
                         createReq: CreateEditorRequest,
                         db: Session = Depends(get_db)):
-    response = await create_editor(request, createReq, db)
+    response = await create_editor_or_author(request, createReq, db, role="editor")
     return response 
+    
 
+# create editor
+@user_router.post("/create_author", 
+                  dependencies=[Depends(JWTBearer())],
+                  status_code=status.HTTP_201_CREATED)
+async def author_create(request: Request,
+                        createReq: CreateEditorRequest,
+                        db: Session = Depends(get_db)):
+    response = await create_editor_or_author(request, createReq, db, role="author")
+    return response 
