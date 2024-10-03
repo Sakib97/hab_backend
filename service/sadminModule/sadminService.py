@@ -25,7 +25,7 @@ def check_if_cat_id_name_valid(cat_id_list, cat_name_list, db):
 
 async def create_editor_or_author(request: Request,
                         createEditorOrAuthorReq: CreateEditorRequest,
-                        db,  role: str):
+                        db,  role: str, mode: str):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
         user_role, creator_role_list = get_role_list(user_email, db)
@@ -44,8 +44,6 @@ async def create_editor_or_author(request: Request,
             raise HTTPException(status_code=409, detail="User doesn't exist !")
         
         # check if assigned category list (id and name) are present in db
-        # assigned_cat_id_list = ''
-        # assigned_cat_name_list = ''
         if (createEditorOrAuthorReq.assigned_cat_id_list != "all" and createEditorOrAuthorReq.assigned_cat_name_list != "all"):
             check_if_cat_id_name_valid(createEditorOrAuthorReq.assigned_cat_id_list, createEditorOrAuthorReq.assigned_cat_name_list, db)
             assigned_cat_id_list = createEditorOrAuthorReq.assigned_cat_id_list
@@ -60,58 +58,82 @@ async def create_editor_or_author(request: Request,
              
 
         if role == "editor":
-            author = db.query(EditorModel).filter(EditorModel.user_email == createEditorOrAuthorReq.user_email).first()
-            if author:
-                raise HTTPException(status_code=409, detail="User already registered as an Editor !")
-            new_editor = EditorModel(
-                user_id=createEditorOrAuthorReq.user_id,
-                user_email=createEditorOrAuthorReq.user_email,
-                # assigned_cat_id_list=createEditorOrAuthorReq.assigned_cat_id_list,
-                assigned_cat_id_list=assigned_cat_id_list,
-                assigned_cat_name_list=assigned_cat_name_list
-                # assigned_cat_name_list=createEditorOrAuthorReq.assigned_cat_name_list
-            )
-
-            db.add(new_editor)
-            db.commit()
-            db.refresh(new_editor)
+            editor = db.query(EditorModel).filter(EditorModel.user_email == createEditorOrAuthorReq.user_email).first()
+            
+            # in create mode
+            if mode == "create":
+                if editor:
+                    raise HTTPException(status_code=409, detail="User already registered as an Editor !")
+                new_editor = EditorModel(
+                    user_id=createEditorOrAuthorReq.user_id,
+                    user_email=createEditorOrAuthorReq.user_email,
+                    assigned_cat_id_list=assigned_cat_id_list,
+                    assigned_cat_name_list=assigned_cat_name_list
+                )
+                db.add(new_editor)
+                db.commit()
+                db.refresh(new_editor)
+            
+            elif mode == "edit":
+                if not editor:
+                    raise HTTPException(status_code=409, detail="User isn't registered as an Editor !")
+                editor.assigned_cat_id_list = assigned_cat_id_list
+                editor.assigned_cat_name_list = assigned_cat_name_list
+                db.commit()
+                db.refresh(editor)
+            else: 
+                raise HTTPException(status_code=409, detail="Incorrect Mode !")
 
         if role == "author":
             author = db.query(AuthorModel).filter(AuthorModel.user_email == createEditorOrAuthorReq.user_email).first()
-            if author:
-                raise HTTPException(status_code=409, detail="User already registered as an Author !")
-            new_author = AuthorModel(
-                user_id=createEditorOrAuthorReq.user_id,
-                user_email=createEditorOrAuthorReq.user_email,
-                assigned_cat_id_list=assigned_cat_id_list,
-                assigned_cat_name_list=assigned_cat_name_list
-            )
+            
+            if mode == "create":
+                if author:
+                    raise HTTPException(status_code=409, detail="User already registered as an Author !")
+                new_author = AuthorModel(
+                    user_id=createEditorOrAuthorReq.user_id,
+                    user_email=createEditorOrAuthorReq.user_email,
+                    assigned_cat_id_list=assigned_cat_id_list,
+                    assigned_cat_name_list=assigned_cat_name_list
+                )
+                db.add(new_author)
+                db.commit()
+                db.refresh(new_author)
+            
+            elif mode == "edit":
+                if not author: 
+                    raise HTTPException(status_code=409, detail="User isn't registered as an Author !")
+                author.assigned_cat_id_list = assigned_cat_id_list
+                author.assigned_cat_name_list = assigned_cat_name_list
+                db.commit()
+                db.refresh(author)
+            else: 
+                raise HTTPException(status_code=409, detail="Incorrect Mode !")
 
-            db.add(new_author)
-            db.commit()
-            db.refresh(new_author)
 
         # now need to update user's role in user role table
         toBeEditorOrAuthor_role, toBeEditorOrAuthor_role_id_list = get_role_list(createEditorOrAuthorReq.user_email, db)
         if role == "editor":
-            editor_code = 1260
-            if editor_code not in toBeEditorOrAuthor_role_id_list:
-                toBeEditorOrAuthor_role_id_list.append(editor_code)
-            
-            toBeEditorOrAuthor_role.role_code_list = str(toBeEditorOrAuthor_role_id_list)
-            db.commit()
-            db.refresh(toBeEditorOrAuthor_role)
+            if mode == "create":
+                editor_code = 1260
+                if editor_code not in toBeEditorOrAuthor_role_id_list:
+                    toBeEditorOrAuthor_role_id_list.append(editor_code)
+                
+                toBeEditorOrAuthor_role.role_code_list = str(toBeEditorOrAuthor_role_id_list)
+                db.commit()
+                db.refresh(toBeEditorOrAuthor_role)
 
         if role == "author":
-            author_code = 1203
-            if author_code not in toBeEditorOrAuthor_role_id_list:
-                toBeEditorOrAuthor_role_id_list.append(author_code)
-            
-            toBeEditorOrAuthor_role.role_code_list = str(toBeEditorOrAuthor_role_id_list)
-            db.commit()
-            db.refresh(toBeEditorOrAuthor_role)
+            if mode == "create":
+                author_code = 1203
+                if author_code not in toBeEditorOrAuthor_role_id_list:
+                    toBeEditorOrAuthor_role_id_list.append(author_code)
+                
+                toBeEditorOrAuthor_role.role_code_list = str(toBeEditorOrAuthor_role_id_list)
+                db.commit()
+                db.refresh(toBeEditorOrAuthor_role)
         
-        return {"msg": f"new {role} created"}
+        return {"msg": f"{role} {mode}ed"}
     
     except Exception as e:
         raise HTTPException(

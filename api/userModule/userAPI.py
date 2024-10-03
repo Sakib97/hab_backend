@@ -180,7 +180,8 @@ async def edit_profile(request: Request,
 async def editor_create(request: Request,
                         createReq: CreateEditorRequest,
                         db: Session = Depends(get_db)):
-    response = await create_editor_or_author(request, createReq, db, role="editor")
+    response = await create_editor_or_author(request, createReq, 
+                                             db, role="editor", mode="create")
     return response 
     
 
@@ -191,5 +192,31 @@ async def editor_create(request: Request,
 async def author_create(request: Request,
                         createReq: CreateEditorRequest,
                         db: Session = Depends(get_db)):
-    response = await create_editor_or_author(request, createReq, db, role="author")
+    response = await create_editor_or_author(request, createReq, 
+                                             db, role="author", mode="create")
     return response 
+
+# edit editor (change assgned cat list)
+@user_router.post("/edit_editor", 
+                  dependencies=[Depends(JWTBearer())],
+                  status_code=status.HTTP_201_CREATED)
+async def editor_edit(request: Request,
+                        createReq: CreateEditorRequest,
+                        db: Session = Depends(get_db)):
+    response = await create_editor_or_author(request, createReq, 
+                                             db, role="editor", mode="edit")
+    return response 
+
+
+# edit author (change assgned cat list)
+@user_router.post("/edit_author", 
+                  dependencies=[Depends(JWTBearer())],
+                  status_code=status.HTTP_201_CREATED)
+async def author_edit(request: Request,
+                        createReq: CreateEditorRequest,
+                        db: Session = Depends(get_db)):
+    response = await create_editor_or_author(request, createReq, 
+                                             db, role="author", mode="edit")
+    return response 
+
+
