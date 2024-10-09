@@ -53,13 +53,38 @@
 # else:
 #     print(False)
 
-import ast
-list1 = "[1,2,3]"
-list2 = "['bd', 'me', 'eu']"
+# import ast
+# list1 = "[1,2,3]"
+# list2 = "['bd', 'me', 'eu']"
+# str1 = "Hello "
 
-list1 = ast.literal_eval(list1)
-list2 = ast.literal_eval(list2)
+# list1 = ast.literal_eval(list1)
+# list2 = ast.literal_eval(list2)
 
-# for i in range(len(list1)):
-#     print(list1[i], list2[i] )
+# list2 = list1.copy()
+# print(list2)
 
+# str2 = str1.lower().replace(" ", "-")
+# print(str2)
+
+import random
+
+list1 = [
+			{
+				"user_id": 19,
+				"user_email": "dr@gmail.com",
+				"assigned_cat_name_list": "['Bangladesh', 'Middle East', 'Europe', 'Early Islamic Age', 'Islamic States', 'Americas', 'China & Far East', 'Opinions', 'Malaysia', 'Russia']",
+				"assigned_cat_id_list": "[1, 2, 4, 5, 6, 7, 8, 3, 10, 9]",
+				"editor_id": 11
+			},
+            {
+				"user_id": 20,
+				"user_email": "ab@gmail.com",
+				"assigned_cat_name_list": "['Bangladesh', 'Middle East']",
+				"assigned_cat_id_list": "[1, 2 ]",
+				"editor_id": 12
+			}
+		]
+random_number = random.choice(list1)
+
+print(random_number["user_id"])

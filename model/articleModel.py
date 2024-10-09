@@ -38,6 +38,9 @@ class ArticleModel(Base):
     subtitle_bn = Column(Text)
     content_en = Column(Text)
     content_bn = Column(Text)
+    cover_img_link = Column(Text)
+    cover_img_cap_en = Column(Text)
+    cover_img_cap_bn = Column(Text)
     article_status = Column(String(100)) # under_review_new / under_review_resubmit / rejected / published / hidden
     # submitted_at = Column(DateTime, nullable=True)
     # updated_at = Column(DateTime, nullable=True)
@@ -60,7 +63,7 @@ class ArticleSubmissionModel(Base):
     author_email = Column(String(255))
     editor_id = Column(Integer)
     editor_email = Column(String(255))
-    article_status = Column(String(100)) # under_review /  under_review_resubmit / rejected / published / hidden
+    article_status = Column(String(100)) # under_review_new /  under_review_resubmit / rejected / published / hidden
     submitted_at = Column(DateTime, nullable=True)
     
     decision_comment = Column(String)
