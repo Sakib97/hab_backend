@@ -25,7 +25,9 @@ async def create_menu(request: Request,
     return response
 
 # get all category
-@category_router.get("/get_all_cat", response_model=List[CategoryResponse] ,status_code=status.HTTP_200_OK)
+@category_router.get("/get_all_cat", 
+                     response_model=List[CategoryResponse] ,
+                     status_code=status.HTTP_200_OK)
 async def get_all_category(db: Session = Depends(get_db)):
     cats = db.query(CategoryModel).all()
     return cats
@@ -39,7 +41,9 @@ async def create_submenu(request: Request,
     return response
 
 # get all sub category
-@category_router.get("/get_all_subcat", response_model=List[SubCategoryResponse] ,status_code=status.HTTP_200_OK)
+@category_router.get("/get_all_subcat", 
+                     response_model=List[SubCategoryResponse] ,
+                     status_code=status.HTTP_200_OK)
 async def get_all_subcategory(db: Session = Depends(get_db)):
     subcats = db.query(SubcategoryModel).all()
     return subcats

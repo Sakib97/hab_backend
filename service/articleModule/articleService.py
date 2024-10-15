@@ -1,6 +1,7 @@
 from model.articleModel import TagModel, CategoryModel, SubcategoryModel
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks, Depends
 from request.articleRequest import CreateArticleRequest
+from response.articleResponse import UnrevArticleResponse
 from service.userModule.userService import get_current_user_profile
 from model.userModel import EditorModel
 from model.articleModel import ArticleModel, ArticleSubmissionModel
@@ -113,6 +114,74 @@ async def create_article(request: Request,
 
         return {"msg": f"new article sent for review to: {random_editor.user_email}"}
 
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {e}"
+            )
+
+def get_unreviewed_article_list_by_editor(request: Request, 
+                                editor_email: str,
+                                db):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_obj, user_role_list = get_role_list(user_email, db) 
+        
+        allowed_roles = [1260, 1453] # editor_role = 1260, sadmin_role = 1453
+
+        # checking if user is either correct editor or sadmin
+        if 1260 in user_role_list:
+            isCorrectEditor = editor_email == user_email
+            if not isCorrectEditor:
+                raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
+            
+        if not any(item in user_role_list for item in allowed_roles):
+            raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
+        
+        unRevArticleSub = db.query(ArticleSubmissionModel).filter(
+            ArticleSubmissionModel.editor_email == editor_email
+        ).filter(
+            ArticleSubmissionModel.article_status == "under_review_new"
+        ).all()
+
+        unRev_article_id_list = []
+        unRev_article_obj_list = []
+        for submission in unRevArticleSub:
+            unRev_article_id_list.append(submission.article_id)
+            
+            article_obj = db.query(ArticleModel).filter(
+                ArticleModel.article_id == submission.article_id
+            ).first()
+            article = UnrevArticleResponse(
+                article_id=article_obj.article_id,
+                author_email=article_obj.email,
+                editor_email=submission.editor_email,
+                article_status=submission.article_status,
+                submitted_at=submission.submitted_at,
+                decision_comment=submission.decision_comment,
+                decision_comment_at=submission.decision_comment_at,
+                sent_for_edit_at=submission.sent_for_edit_at,
+                resubmitted_at=submission.resubmitted_at,
+                
+                category_id=article_obj.category_id,
+                subcategory_id=article_obj.subcategory_id,
+                title_en=article_obj.title_en,
+                title_bn=article_obj.title_bn,
+                subtitle_en=article_obj.subtitle_en,
+                subtitle_bn=article_obj.subtitle_bn,
+                content_en=article_obj.content_en,
+                content_bn=article_obj.content_bn,
+                tags=article_obj.tags,
+                cover_img_link=article_obj.cover_img_link,
+                cover_img_cap_en=article_obj.cover_img_cap_en,
+                cover_img_cap_bn=article_obj.cover_img_cap_bn
+            )
+            unRev_article_obj_list.append(article)
+
+        # return unRevArticleSub
+        # return unRev_article_id_list
+        return unRev_article_obj_list
+    
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

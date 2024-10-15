@@ -73,7 +73,8 @@ async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRe
              category_id=addSubCatReq.category_id,
              category_name=addSubCatReq.category_name,
              subcategory_slug=addSubCatReq.subcategory_slug,
-             subcategory_order=addSubCatReq.subcategory_order
+             subcategory_order=addSubCatReq.subcategory_order,
+             is_enabled=True
         )
 
         db.add(new_subcategory)

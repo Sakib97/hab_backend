@@ -53,6 +53,14 @@
 # else:
 #     print(False)
 
+list1 = [2024, 1260, 1453, 1203]
+list2 = [1260, 1453, 124]
+
+# Check if all elements of list2 are in list1
+is_present =any(item in list1 for item in list2)
+
+print(is_present)  # Output: True (if all values are present)
+
 # import ast
 # list1 = "[1,2,3]"
 # list2 = "['bd', 'me', 'eu']"
@@ -67,24 +75,24 @@
 # str2 = str1.lower().replace(" ", "-")
 # print(str2)
 
-import random
+# import random
 
-list1 = [
-			{
-				"user_id": 19,
-				"user_email": "dr@gmail.com",
-				"assigned_cat_name_list": "['Bangladesh', 'Middle East', 'Europe', 'Early Islamic Age', 'Islamic States', 'Americas', 'China & Far East', 'Opinions', 'Malaysia', 'Russia']",
-				"assigned_cat_id_list": "[1, 2, 4, 5, 6, 7, 8, 3, 10, 9]",
-				"editor_id": 11
-			},
-            {
-				"user_id": 20,
-				"user_email": "ab@gmail.com",
-				"assigned_cat_name_list": "['Bangladesh', 'Middle East']",
-				"assigned_cat_id_list": "[1, 2 ]",
-				"editor_id": 12
-			}
-		]
-random_number = random.choice(list1)
+# list1 = [
+# 			{
+# 				"user_id": 19,
+# 				"user_email": "dr@gmail.com",
+# 				"assigned_cat_name_list": "['Bangladesh', 'Middle East', 'Europe', 'Early Islamic Age', 'Islamic States', 'Americas', 'China & Far East', 'Opinions', 'Malaysia', 'Russia']",
+# 				"assigned_cat_id_list": "[1, 2, 4, 5, 6, 7, 8, 3, 10, 9]",
+# 				"editor_id": 11
+# 			},
+#             {
+# 				"user_id": 20,
+# 				"user_email": "ab@gmail.com",
+# 				"assigned_cat_name_list": "['Bangladesh', 'Middle East']",
+# 				"assigned_cat_id_list": "[1, 2 ]",
+# 				"editor_id": 12
+# 			}
+# 		]
+# random_number = random.choice(list1)
 
-print(random_number["user_id"])
+# print(random_number["user_id"])
