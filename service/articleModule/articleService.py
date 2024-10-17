@@ -3,7 +3,7 @@ from fastapi import HTTPException, Request, status, Response, BackgroundTasks, D
 from request.articleRequest import CreateArticleRequest
 from response.articleResponse import UnrevArticleResponse
 from service.userModule.userService import get_current_user_profile
-from model.userModel import EditorModel
+from model.userModel import EditorModel, UserModel
 from model.articleModel import ArticleModel, ArticleSubmissionModel
 import ast
 from service.common.roleFinder import get_role_list
@@ -152,11 +152,23 @@ def get_unreviewed_article_list_by_editor(request: Request,
             article_obj = db.query(ArticleModel).filter(
                 ArticleModel.article_id == submission.article_id
             ).first()
+
+            # get author details
+            article_author = db.query(UserModel).filter(
+                UserModel.email == article_obj.email
+            ).first()
+
             article = UnrevArticleResponse(
                 article_id=article_obj.article_id,
+
                 author_email=article_obj.email,
+                author_firstname=article_author.first_name,
+                author_lastname=article_author.last_name,
+                author_image_url=article_author.image_url,
+
                 editor_email=submission.editor_email,
                 article_status=submission.article_status,
+                
                 submitted_at=submission.submitted_at,
                 decision_comment=submission.decision_comment,
                 decision_comment_at=submission.decision_comment_at,

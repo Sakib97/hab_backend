@@ -28,7 +28,8 @@ from pydantic import BaseModel
 #     #     orm_mode = True
 
 class UnrevArticleResponse:
-    def __init__(self, article_id: int, author_email: str, editor_email: str, article_status: str,
+    def __init__(self, article_id: int, author_email: str, author_firstname:str, author_lastname:str,
+                 author_image_url: str, editor_email: str, article_status: str,
                  submitted_at: str, decision_comment: str, decision_comment_at: str,
                  sent_for_edit_at: str, resubmitted_at: str, category_id: int, subcategory_id: int,
                  title_en: str, title_bn: str, subtitle_en: str, subtitle_bn: str, 
@@ -36,6 +37,10 @@ class UnrevArticleResponse:
                  cover_img_cap_en: str, cover_img_cap_bn: str):
         self.article_id = article_id
         self.author_email = author_email
+        self.author_firstname = author_firstname
+        self.author_lastname = author_lastname 
+        self.author_image_url = author_image_url
+
         self.editor_email = editor_email
         self.article_status = article_status
         self.submitted_at = submitted_at
