@@ -31,10 +31,11 @@ class UnrevArticleResponse:
     def __init__(self, article_id: int, author_email: str, author_firstname:str, author_lastname:str,
                  author_image_url: str, editor_email: str, article_status: str,
                  submitted_at: str, decision_comment: str, decision_comment_at: str,
-                 sent_for_edit_at: str, resubmitted_at: str, category_id: int, subcategory_id: int,
+                 sent_for_edit_at: str, resubmitted_at: str, 
+                 category_id: int, subcategory_id: int, category_name: str, subcategory_name: str,
                  title_en: str, title_bn: str, subtitle_en: str, subtitle_bn: str, 
                  content_en: str, content_bn: str, tags: str, cover_img_link: str, 
-                 cover_img_cap_en: str, cover_img_cap_bn: str):
+                 cover_img_cap_en: str, cover_img_cap_bn: str, status: str):
         self.article_id = article_id
         self.author_email = author_email
         self.author_firstname = author_firstname
@@ -48,8 +49,12 @@ class UnrevArticleResponse:
         self.decision_comment_at = decision_comment_at
         self.sent_for_edit_at = sent_for_edit_at
         self.resubmitted_at = resubmitted_at
+
         self.category_id = category_id
         self.subcategory_id = subcategory_id
+        self.category_name = category_name,
+        self.subcategory_name = subcategory_name,
+
         self.title_en = title_en
         self.title_bn = title_bn
         self.subtitle_en = subtitle_en
@@ -61,5 +66,6 @@ class UnrevArticleResponse:
         self.cover_img_cap_en = cover_img_cap_en
         self.cover_img_cap_bn = cover_img_cap_bn
 
+        self.status = status
     def __repr__(self):
         return f"UnrevArticleResponse(article_id={self.article_id}, title_en={self.title_en}, author_email={self.author_email})"

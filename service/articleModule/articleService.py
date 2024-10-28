@@ -122,6 +122,8 @@ async def create_article(request: Request,
 
 def get_unreviewed_article_list_by_editor(request: Request, 
                                 editor_email: str,
+                                page: int,
+                                limit: int,
                                 db):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
@@ -138,11 +140,23 @@ def get_unreviewed_article_list_by_editor(request: Request,
         if not any(item in user_role_list for item in allowed_roles):
             raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
         
+        # unRevArticleSub = db.query(ArticleSubmissionModel).filter(
+        #     ArticleSubmissionModel.editor_email == editor_email
+        # ).filter(
+        #     ArticleSubmissionModel.article_status == "under_review_new"
+        # ).all()
+
+        offset = (page - 1) * limit
         unRevArticleSub = db.query(ArticleSubmissionModel).filter(
-            ArticleSubmissionModel.editor_email == editor_email
-        ).filter(
+        ArticleSubmissionModel.editor_email == editor_email,
+        ArticleSubmissionModel.article_status == "under_review_new"
+        ).offset(offset).limit(limit).all()
+
+        total_article_count = db.query(ArticleSubmissionModel).filter(
+            ArticleSubmissionModel.editor_email == editor_email,
             ArticleSubmissionModel.article_status == "under_review_new"
-        ).all()
+            ).count()
+
 
         unRev_article_id_list = []
         unRev_article_obj_list = []
@@ -158,6 +172,15 @@ def get_unreviewed_article_list_by_editor(request: Request,
                 UserModel.email == article_obj.email
             ).first()
 
+            # category and subcategory name
+            category = db.query(CategoryModel).filter(
+                CategoryModel.category_id ==article_obj.category_id).first()
+            category_name = category.category_name
+
+            subcategory = db.query(SubcategoryModel).filter(
+                SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
+            subcategory_name = subcategory.subcategory_name
+            
             article = UnrevArticleResponse(
                 article_id=article_obj.article_id,
 
@@ -177,6 +200,9 @@ def get_unreviewed_article_list_by_editor(request: Request,
                 
                 category_id=article_obj.category_id,
                 subcategory_id=article_obj.subcategory_id,
+                category_name=category_name,
+                subcategory_name=subcategory_name,
+
                 title_en=article_obj.title_en,
                 title_bn=article_obj.title_bn,
                 subtitle_en=article_obj.subtitle_en,
@@ -186,13 +212,15 @@ def get_unreviewed_article_list_by_editor(request: Request,
                 tags=article_obj.tags,
                 cover_img_link=article_obj.cover_img_link,
                 cover_img_cap_en=article_obj.cover_img_cap_en,
-                cover_img_cap_bn=article_obj.cover_img_cap_bn
+                cover_img_cap_bn=article_obj.cover_img_cap_bn, 
+
+                status=article_obj.article_status
             )
             unRev_article_obj_list.append(article)
 
         # return unRevArticleSub
         # return unRev_article_id_list
-        return unRev_article_obj_list
+        return total_article_count, unRev_article_obj_list
     
     except Exception as e:
         raise HTTPException(

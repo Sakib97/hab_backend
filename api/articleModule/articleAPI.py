@@ -31,13 +31,18 @@ async def post_article(request: Request,
 
 # get unreviewed article by editor_email
 @article_router.get("/unrev_article_by_editor_mail/{editor_email}", 
+                    dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)
 async def get_list(request: Request,
                    editor_email, 
+                   page: int = 1,
+                   limit: int = 3,
                    db: Session = Depends(get_db)):
-    article_list = get_unreviewed_article_list_by_editor(request, 
+    total_article_count, article_list = get_unreviewed_article_list_by_editor(request, 
                                                          editor_email=editor_email, 
+                                                         page=page,
+                                                         limit=limit,
                                                          db=db)
-    # return {"unreviewed_list": article_list}
-    return article_list
-    # pass
+    
+    return { "totalCount": total_article_count, "articles": article_list}
+    # return article_list
