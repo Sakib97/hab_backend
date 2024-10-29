@@ -46,3 +46,4 @@ async def get_list(request: Request,
     
     return { "totalCount": total_article_count, "articles": article_list}
     # return article_list
+

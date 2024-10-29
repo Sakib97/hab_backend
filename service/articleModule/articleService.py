@@ -5,9 +5,11 @@ from response.articleResponse import UnrevArticleResponse
 from service.userModule.userService import get_current_user_profile
 from model.userModel import EditorModel, UserModel
 from model.articleModel import ArticleModel, ArticleSubmissionModel
+from model.notificationModel import EditorNotificationModel
 import ast
 from service.common.roleFinder import get_role_list
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from core.database import get_db
 import random
 from datetime import datetime
@@ -110,7 +112,29 @@ async def create_article(request: Request,
         db.add(new_article_submission)
         db.commit()
         db.refresh(new_article_submission)
+
         # entry will also go to Author and Editor Notification Model
+        notif_text = f"""You have a new article review request from 
+        <b> {current_user.first_name} {current_user.last_name} </b> 
+        on category: <b> {category.category_name} </b> 
+        and subcategory: <b> {subcategory.subcategory_name} </b> <br> 
+        Article Title: <b> {new_article.title_en} </b>"""
+        
+        new_editor_notification = EditorNotificationModel(
+            editor_email=random_editor.user_email,
+            notification_title="New Article Review Request !",
+            notification_title_color="blue",
+            notification_text=notif_text,
+            notification_type=f"new_article_review_request_article_id_{new_article.article_id}",
+            notification_icon="new_icon",
+            is_read=False,
+            notification_time=datetime.now(),
+            notification_link="/editor_dashboard/review/unreviwed-articles"
+        )
+
+        db.add(new_editor_notification)
+        db.commit()
+        db.refresh(new_editor_notification)
 
         return {"msg": f"new article sent for review to: {random_editor.user_email}"}
 
@@ -150,7 +174,8 @@ def get_unreviewed_article_list_by_editor(request: Request,
         unRevArticleSub = db.query(ArticleSubmissionModel).filter(
         ArticleSubmissionModel.editor_email == editor_email,
         ArticleSubmissionModel.article_status == "under_review_new"
-        ).offset(offset).limit(limit).all()
+        ).order_by(desc(ArticleSubmissionModel.submitted_at)).offset(offset).limit(limit).all()
+        # Sort by date in descending order
 
         total_article_count = db.query(ArticleSubmissionModel).filter(
             ArticleSubmissionModel.editor_email == editor_email,
@@ -217,6 +242,7 @@ def get_unreviewed_article_list_by_editor(request: Request,
                 status=article_obj.article_status
             )
             unRev_article_obj_list.append(article)
+    
 
         # return unRevArticleSub
         # return unRev_article_id_list
