@@ -126,7 +126,8 @@ async def create_article(request: Request,
             notification_title_color="blue",
             notification_text=notif_text,
             notification_type=f"new_article_review_request_article_id_{new_article.article_id}",
-            notification_icon="new_icon",
+            notification_icon="""<i class="fa-solid fa-file-circle-exclamation"></i>""",
+            # <i className="fa-solid fa-file-circle-exclamation"></i>
             is_read=False,
             notification_time=datetime.now(),
             notification_link="/editor_dashboard/review/unreviwed-articles"
