@@ -1,6 +1,6 @@
 from model.articleModel import TagModel, CategoryModel, SubcategoryModel
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks, Depends
-from request.articleRequest import CreateArticleRequest
+from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest
 from response.articleResponse import UnrevArticleResponse
 from service.userModule.userService import get_current_user_profile
 from model.userModel import EditorModel, UserModel
@@ -89,7 +89,7 @@ async def create_article(request: Request,
             cover_img_cap_bn=data.cover_img_cap_bn,
             article_status="under_review_new",
             article_slug=new_article_slug,
-            tags=final_tag_name_list
+            tags=str(final_tag_name_list)
         )
         db.add(new_article)
         db.commit()
@@ -165,12 +165,6 @@ def get_unreviewed_article_list_by_editor(request: Request,
         if not any(item in user_role_list for item in allowed_roles):
             raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
         
-        # unRevArticleSub = db.query(ArticleSubmissionModel).filter(
-        #     ArticleSubmissionModel.editor_email == editor_email
-        # ).filter(
-        #     ArticleSubmissionModel.article_status == "under_review_new"
-        # ).all()
-
         offset = (page - 1) * limit
         unRevArticleSub = db.query(ArticleSubmissionModel).filter(
         ArticleSubmissionModel.editor_email == editor_email,
@@ -243,10 +237,7 @@ def get_unreviewed_article_list_by_editor(request: Request,
                 status=article_obj.article_status
             )
             unRev_article_obj_list.append(article)
-    
 
-        # return unRevArticleSub
-        # return unRev_article_id_list
         return total_article_count, unRev_article_obj_list
     
     except Exception as e:
@@ -254,3 +245,45 @@ def get_unreviewed_article_list_by_editor(request: Request,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {e}"
             )
+
+def add_tag_to_article(request: Request,addTagReq: AddTagToArticleRequest, db):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_obj, user_role_list = get_role_list(user_email, db) 
+        
+        allowed_roles = [1260, 1453] # editor_role = 1260, sadmin_role = 1453
+
+        if not any(item in user_role_list for item in allowed_roles):
+            raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
+        
+        # get article by article id
+        article_obj = db.query(ArticleModel).filter(
+                ArticleModel.article_id == addTagReq.article_id
+            ).first()
+        if not article_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Not Found !")
+        
+        existing_tags =  ast.literal_eval(article_obj.tags)
+        if existing_tags[-1] == "newTagRequested":
+            existing_tags = []
+
+        new_tags = ast.literal_eval(addTagReq.tag_name)
+        for tag in new_tags:
+            existing_tags.append(tag)
+
+        article_obj.tags = str(existing_tags)
+        db.commit()
+        db.refresh(article_obj)
+
+        return {"msg": "tag added to article"}
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {e}"
+            )
+
+def approve_article(request: Request, db):
+
+    pass

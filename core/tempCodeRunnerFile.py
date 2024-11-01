@@ -53,23 +53,25 @@
 # else:
 #     print(False)
 
-list1 = [2024, 1260, 1453, 1203]
-list2 = [1260, 1453, 124]
+# list1 = [2024, 1260, 1453, 1203]
+# list2 = [1260, 1453, 124]
 
-# Check if all elements of list2 are in list1
-is_present =any(item in list1 for item in list2)
+# # Check if all elements of list2 are in list1
+# is_present =any(item in list1 for item in list2)
 
-print(is_present)  # Output: True (if all values are present)
+# print(is_present)  # Output: True (if all values are present)
 
-# import ast
+import ast
 # list1 = "[1,2,3]"
-# list2 = "['bd', 'me', 'eu']"
+list2 = "['bd', 'me', 'eu']"
 # str1 = "Hello "
 
 # list1 = ast.literal_eval(list1)
-# list2 = ast.literal_eval(list2)
+list2 = ast.literal_eval(list2)
 
 # list2 = list1.copy()
+list1 = list2.copy()
+print(list1[:-1])
 # print(list2)
 
 # str2 = str1.lower().replace(" ", "-")

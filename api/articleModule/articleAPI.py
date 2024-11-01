@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request, Response
 from core.jwtHandler import JWTBearer
 from core.database import get_db
 from sqlalchemy.orm import Session
-from request.articleRequest import CreateArticleRequest
-from service.articleModule.articleService import get_unreviewed_article_list_by_editor, get_editor_by_category_id, create_article
+from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest
+from service.articleModule.articleService import get_unreviewed_article_list_by_editor, \
+get_editor_by_category_id, create_article, add_tag_to_article
 
 article_router = APIRouter(
     prefix="/article", 
@@ -46,4 +47,23 @@ async def get_list(request: Request,
     
     return { "totalCount": total_article_count, "articles": article_list}
     # return article_list
+
+@article_router.post("/add_tag_to_article", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+async def add_tag_article(request: Request,
+                          addTagReq: AddTagToArticleRequest,
+                        db: Session = Depends(get_db)):
+    tags = add_tag_to_article(request=request, addTagReq=addTagReq, db=db)
+    return tags
+
+# approve article by id
+@article_router.post("/approve_article", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+async def approve_art(request: Request,
+                   db: Session = Depends(get_db)):
+    pass
+
+# ['Hello', 'newTagRequested']
 

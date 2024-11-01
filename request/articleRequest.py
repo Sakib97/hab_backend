@@ -15,3 +15,7 @@ class CreateArticleRequest(BaseModel):
     cover_img_cap_bn: str
     tags: str # ex: "['tag1', 'tag2']"
     new_tag: str # ex: "['new_tag1', 'new_tag2']"
+
+class AddTagToArticleRequest(BaseModel):
+    article_id: int
+    tag_name: str # ex: "['new_tag']"
