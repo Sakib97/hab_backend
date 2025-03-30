@@ -270,7 +270,8 @@ def add_tag_to_article(request: Request,addTagReq: AddTagToArticleRequest, db):
 
         new_tags = ast.literal_eval(addTagReq.tag_name)
         for tag in new_tags:
-            existing_tags.append(tag)
+            if tag != "newTagRequested":
+                existing_tags.append(tag)
 
         article_obj.tags = str(existing_tags)
         db.commit()
