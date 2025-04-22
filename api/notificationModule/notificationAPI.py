@@ -3,20 +3,22 @@ from core.jwtHandler import JWTBearer
 from core.database import get_db
 from sqlalchemy.orm import Session
 from service.notificationModule.notificationService import \
-get_all_editor_notification, get_unread_editor_notis_count
+get_all_notification, get_unread_editor_notis_count, mark_notis_as_clicked
 
 notification_router = APIRouter(
     prefix="/notification", 
     tags=["Notification"])
 
-@notification_router.get("/editor_notifcation_list", 
+@notification_router.get("/notifcation_list/{user_type}", 
                          dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)
-async def get_all_editor_notif(request: Request, 
+async def get_all_notif(request: Request, 
+                                 user_type: str,
                                page: int = 1,
                                limit: int = 3,
                                db: Session = Depends(get_db)):
-    total_notis_count, all_notifs = get_all_editor_notification(request=request, 
+    total_notis_count, all_notifs = get_all_notification(request=request, 
+                                             user_type=user_type,
                                              page=page, 
                                              limit=limit,
                                              db=db)
@@ -30,3 +32,20 @@ async def get_unread_editor_notif_count(request: Request,
                                         db: Session = Depends(get_db)):
     total_unread = get_unread_editor_notis_count(request=request, db=db)
     return {"totalUnread": total_unread}
+
+# @notification_router.get("get_all")
+
+@notification_router.post("/mark_notis_as_clicked/{user_type}/{notis_id}", 
+                         dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+
+async def mark_notification_as_clicked(request: Request,
+                                 user_type: str,
+                                notis_id: int,
+                               db: Session = Depends(get_db)):
+    
+    response = mark_notis_as_clicked(request=request, 
+                                      user_type=user_type,
+                                      notis_id=notis_id,
+                                      db=db)
+    return response

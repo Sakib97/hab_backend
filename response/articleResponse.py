@@ -69,3 +69,27 @@ class UnrevArticleResponse:
         self.status = status
     def __repr__(self):
         return f"UnrevArticleResponse(article_id={self.article_id}, title_en={self.title_en}, author_email={self.author_email})"
+    
+class ApprovedArticleResponse(BaseModel):
+    author_email: str 
+    author_firstname: str
+    author_lastname: str
+    author_image_url: str
+    published_at: str 
+
+    category_name: str
+    subcategory_name: str
+    title_en: str
+    title_bn: str
+    subtitle_en: str
+    subtitle_bn: str
+    content_en: str
+    content_bn: str
+
+    tags: str 
+    cover_img_link: str 
+    cover_img_cap_en: str 
+    cover_img_cap_bn: str
+
+    class Config():
+        from_attributes = True

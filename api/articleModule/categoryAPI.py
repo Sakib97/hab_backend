@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Annotated, List
 from core.database import get_db
-from service.articleModule.categoryService import create_tag, create_category, create_subcategory
+from service.articleModule.categoryService import create_tag, create_category, create_subcategory, \
+fetch_subcategory_by_cat_id_or_slug
 from core.jwtHandler import JWTBearer
 from request.categoryRequest import CreateTagRequest, CreateCategoryRequest,CreateSubCategoryRequest
 from response.categoryResponse import TagResponse, CategoryResponse, SubCategoryResponse
@@ -62,4 +63,12 @@ async def get_all_tag(db: Session = Depends(get_db)):
     tags = db.query(TagModel).all()
     return tags
 
-
+# get subcategory by category id or category slug
+@category_router.get("/get_subcat_by_cat_slug/{category_slug}",
+                     status_code=status.HTTP_200_OK)
+async def get_subcategory_by_cat_id_or_slug(
+                                            category_slug: str,
+                                            db: Session = Depends(get_db)):
+    subcats = await fetch_subcategory_by_cat_id_or_slug(category_slug=category_slug, db=db, slug_or_id="slug")
+    # return {"subcats": subcats}
+    return subcats

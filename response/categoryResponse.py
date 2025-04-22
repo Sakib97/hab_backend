@@ -7,9 +7,9 @@ class CategoryResponse(BaseModel):
     category_order: int 
     is_enabled: bool
     class Config():
-        orm_mode = True
+        from_attributes = True
 
-class SubCategoryResponse(BaseModel):
+class SubCategoryResponse(BaseModel): 
     subcategory_id: int 
     subcategory_name: str 
     category_id: int 
@@ -18,7 +18,7 @@ class SubCategoryResponse(BaseModel):
     subcategory_order: int 
     is_enabled: bool
     class Config():
-        orm_mode = True
+        from_attributes = True
 
 class TagResponse(BaseModel):
     tag_id: int

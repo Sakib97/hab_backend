@@ -11,6 +11,7 @@ class EditorNotificationModel(Base):
     notification_type = Column(String(100))
     notification_icon = Column(String(100), nullable=True)
     is_read = Column(Boolean, default=False)
+    is_clicked = Column(Boolean, default=False)
     notification_time = Column(DateTime, nullable=True)
     notification_link = Column(String(100))
 
@@ -24,7 +25,8 @@ class UserAuthorNotificationModel(Base):
     notification_type = Column(String(100))
     notification_icon = Column(String(100), nullable=True)
     is_read = Column(Boolean, default=False)
+    is_clicked = Column(Boolean, default=False)
     notification_time = Column(DateTime, nullable=True)
-    notification_link = Column(String(100))
+    notification_link = Column(String)
 
     

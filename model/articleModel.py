@@ -9,7 +9,7 @@ class CategoryModel(Base):
     category_order = Column(Integer)
     is_enabled = Column(Boolean)
 
-class SubcategoryModel(Base):
+class SubcategoryModel(Base): 
     __tablename__ = "subcategory"
     subcategory_id = Column(Integer, primary_key=True, index=True)
     subcategory_name = Column(String(255))

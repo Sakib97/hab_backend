@@ -1,0 +1,4 @@
+--ALTER TABLE "userAuthor_notification" add COLUMN is_clicked BOOL DEFAULT false;
+--ALTER TABLE "editor_notification" add COLUMN is_clicked BOOL DEFAULT false;
+
+--ALTER TABLE subcategory RENAME COLUMN isenabled TO is_enabled;

@@ -19,3 +19,7 @@ class CreateArticleRequest(BaseModel):
 class AddTagToArticleRequest(BaseModel):
     article_id: int
     tag_name: str # ex: "['new_tag']"
+
+class ApproveArticleRequest(BaseModel):
+    article_id: int
+    decision_comment: str

@@ -61,17 +61,17 @@
 
 # print(is_present)  # Output: True (if all values are present)
 
-import ast
-# list1 = "[1,2,3]"
-list2 = "['bd', 'me', 'eu']"
-# str1 = "Hello "
+# import ast
+# # list1 = "[1,2,3]"
+# list2 = "['bd', 'me', 'eu']"
+# # str1 = "Hello "
 
-# list1 = ast.literal_eval(list1)
-list2 = ast.literal_eval(list2)
+# # list1 = ast.literal_eval(list1)
+# list2 = ast.literal_eval(list2)
 
-# list2 = list1.copy()
-list1 = list2.copy()
-print(list1[:-1])
+# # list2 = list1.copy()
+# list1 = list2.copy()
+# print(list1[:-1])
 # print(list2)
 
 # str2 = str1.lower().replace(" ", "-")
@@ -98,3 +98,31 @@ print(list1[:-1])
 # random_number = random.choice(list1)
 
 # print(random_number["user_id"])
+
+# string1 = ""
+# string2 = "  " \
+# "   "
+# string3 = "hello"
+# string4 = " hello   dfd   "
+
+# if len(string4) == 0 or string4.isspace(): 
+#     print(" is empty")
+# else: 
+#     print(" is not empty")
+import re
+
+string = "Hello World, how are you ? I am fine ! thank you #1? "
+
+# Replace all non-alphanumeric characters (except spaces) with a hyphen
+cleaned_string = re.sub(r'[^\w\s]', '-', string)
+
+# Replace any remaining spaces with hyphens
+cleaned_string = re.sub(r'\s+', '-', cleaned_string)
+
+# Remove any consecutive hyphens and leading/trailing hyphens
+cleaned_string = re.sub(r'-+', '-', cleaned_string).strip('-')
+
+print(cleaned_string)
+
+
+

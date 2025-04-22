@@ -7,6 +7,7 @@ import ast
 from service.common.roleFinder import get_role_list
 from sqlalchemy.orm import Session
 from core.database import get_db
+from typing import List, Optional
 
 # this create can only be done by Super Admin
 # so we need to check if the request is coming from him
@@ -44,9 +45,9 @@ async def create_category(request: Request,
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-            )
+                status_code=e.status_code,
+                detail=e.detail
+                )
 
 # also can only be created by sadmin
 async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRequest, db):
@@ -85,9 +86,9 @@ async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRe
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-            )
+                status_code=e.status_code,
+                detail=e.detail
+                )
     
 async def create_tag(request: Request,
                       addTagReq: CreateTagRequest,
@@ -121,6 +122,68 @@ async def create_tag(request: Request,
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-            )
+                status_code=e.status_code,
+                detail=e.detail
+                )
+
+async def fetch_subcategory_by_cat_id_or_slug(db, 
+                                            category_slug:  Optional[str]  = None,
+                                            category_id:  Optional[int] = None, 
+                                            slug_or_id:  Optional[str] = None,
+                                              ) -> List[SubcategoryModel]:
+    try:
+        target_category_id: Optional[int] = None
+        if slug_or_id == "slug":
+            if not category_slug:
+                raise HTTPException(status_code=400, detail="category_slug is required")  
+            # check if category slug is valid
+            category = db.query(CategoryModel).filter(CategoryModel.category_slug == category_slug).first()
+            if not category:
+                raise HTTPException(status_code=409, detail="Category doesn't exist !")
+            
+            target_category_id = category.category_id
+
+        elif slug_or_id == "id":
+            if category_id is None: # Check specifically for None, as 0 is a valid ID but falsy
+                raise HTTPException(status_code=400, detail="category_id is required")
+            
+            # check if category id is valid
+            category = db.query(CategoryModel).filter(CategoryModel.category_id == category_id).first()
+            if not category:
+                raise HTTPException(status_code=409, detail="Category doesn't exist !")
+            
+            target_category_id = category_id
+            
+        else:
+            raise HTTPException(status_code=409, detail="Invalid value for slug_or_id. Must be 'slug' or 'id'!")
+
+        # Fetch subcategories using the determined category ID
+        # Ensure target_category_id was set (should always be if no exception raised above)
+        if target_category_id is None:
+             # This case should technically be unreachable if logic above is correct
+             raise HTTPException(status_code=500, detail="Internal error: Failed to determine category ID.")
+
+        subcategories = db.query(SubcategoryModel).filter(SubcategoryModel.category_id == target_category_id).all()
+
+        if not subcategories:
+            raise HTTPException(status_code=404, detail="No subcategories found for this category.")
+        
+        # list of subcategories with their names, orders and slugs
+        # also is_enabled = True
+        subcategories = [
+            {
+                "subcategory_name": subcategory.subcategory_name,
+                "subcategory_order": subcategory.subcategory_order,
+                "subcategory_slug": subcategory.subcategory_slug
+            }
+            for subcategory in subcategories if subcategory.is_enabled
+        ]
+
+        return subcategories
+
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )

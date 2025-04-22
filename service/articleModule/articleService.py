@@ -1,11 +1,11 @@
 from model.articleModel import TagModel, CategoryModel, SubcategoryModel
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks, Depends
-from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest
+from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest, ApproveArticleRequest
 from response.articleResponse import UnrevArticleResponse
 from service.userModule.userService import get_current_user_profile
 from model.userModel import EditorModel, UserModel
 from model.articleModel import ArticleModel, ArticleSubmissionModel
-from model.notificationModel import EditorNotificationModel
+from model.notificationModel import EditorNotificationModel, UserAuthorNotificationModel
 import ast
 from service.common.roleFinder import get_role_list
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from sqlalchemy import desc
 from core.database import get_db
 import random
 from datetime import datetime
-
+from util.slugMaker import slugify
 
 def get_editor_by_category_id(category_id,db):
     all_editors = db.query(EditorModel).all()
@@ -71,7 +71,8 @@ async def create_article(request: Request,
             new_tag_name_list.append('newTagRequested')
             final_tag_name_list = new_tag_name_list.copy()
         
-        new_article_slug = data.title_en.lower().replace(" ", "-")
+        # new_article_slug = data.title_en.lower().replace(" ", "-")
+        new_article_slug = slugify(data.title_en)
         
         new_article = ArticleModel(
             user_id=current_user.user_id,
@@ -130,7 +131,7 @@ async def create_article(request: Request,
             # <i className="fa-solid fa-file-circle-exclamation"></i>
             is_read=False,
             notification_time=datetime.now(),
-            notification_link="/editor_dashboard/review/unreviwed-articles"
+            notification_link=f"/editor_dashboard/review/article-review/{new_article.article_id}"
         )
 
         db.add(new_editor_notification)
@@ -141,15 +142,15 @@ async def create_article(request: Request,
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-            )
+                status_code=e.status_code,
+                detail=e.detail
+                )
 
 def get_unreviewed_article_list_by_editor(request: Request, 
                                 editor_email: str,
                                 page: int,
                                 limit: int,
-                                db):
+                                db): 
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
         user_role_obj, user_role_list = get_role_list(user_email, db) 
@@ -242,11 +243,12 @@ def get_unreviewed_article_list_by_editor(request: Request,
     
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-            )
+                status_code=e.status_code,
+                detail=e.detail
+                )
 
-def add_tag_to_article(request: Request,addTagReq: AddTagToArticleRequest, db):
+def add_tag_to_article(request: Request,
+                       addTagReq: AddTagToArticleRequest, db):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
         user_role_obj, user_role_list = get_role_list(user_email, db) 
@@ -281,10 +283,213 @@ def add_tag_to_article(request: Request,addTagReq: AddTagToArticleRequest, db):
         
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
+                status_code=e.status_code,
+                detail=e.detail
+                )
+
+# this function is for getting article by 
+# article_id (either unreviewed or rejected or sent_for_edit)
+# this is for editor and sadmin
+def get_article_by_article_id(request: Request,
+                              article_id: int,
+                              article_status: str,
+                                db):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_obj, user_role_list = get_role_list(user_email, db)
+        allowed_roles = [1260, 1453] # editor_role = 1260, sadmin_role = 1453
+        
+        if not any(item in user_role_list for item in allowed_roles):
+            raise HTTPException(status_code=403, detail="User not authorized to see this information !")
+        
+        # get article by article id
+        article_obj = db.query(ArticleModel).filter(
+                ArticleModel.article_id == article_id
+            ).first()
+        if not article_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Not Found !")
+        
+        # check if article status is valid
+        if article_status != article_obj.article_status:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Invalid article status !")
+        
+        # check is right editor is accessing the article 
+        article_submission_obj = db.query(ArticleSubmissionModel).filter(
+                ArticleSubmissionModel.article_id == article_id,
+            ).first()
+        if not article_submission_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Submission Not Found !")
+        if article_submission_obj.editor_email != user_email:
+            raise HTTPException(status_code=403, detail="User not authorized to see this information !")
+        
+        # get author details
+        article_author = db.query(UserModel).filter(
+            UserModel.email == article_obj.email
+        ).first()
+
+        # get category and subcategory name
+        category = db.query(CategoryModel).filter(
+            CategoryModel.category_id ==article_obj.category_id).first()
+        category_name = category.category_name
+
+        subcategory = db.query(SubcategoryModel).filter(
+            SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
+        subcategory_name = subcategory.subcategory_name
+        
+        article = UnrevArticleResponse(
+                article_id=article_obj.article_id,
+
+                author_email=article_obj.email,
+                author_firstname=article_author.first_name,
+                author_lastname=article_author.last_name,
+                author_image_url=article_author.image_url,
+
+                editor_email=article_submission_obj.editor_email,
+                article_status=article_submission_obj.article_status,
+                
+                submitted_at=article_submission_obj.submitted_at,
+                decision_comment=article_submission_obj.decision_comment,
+                decision_comment_at=article_submission_obj.decision_comment_at,
+                sent_for_edit_at=article_submission_obj.sent_for_edit_at,
+                resubmitted_at=article_submission_obj.resubmitted_at,
+                
+                category_id=article_obj.category_id,
+                subcategory_id=article_obj.subcategory_id,
+                category_name=category_name,
+                subcategory_name=subcategory_name,
+
+                title_en=article_obj.title_en,
+                title_bn=article_obj.title_bn,
+                subtitle_en=article_obj.subtitle_en,
+                subtitle_bn=article_obj.subtitle_bn,
+                content_en=article_obj.content_en,
+                content_bn=article_obj.content_bn,
+                tags=article_obj.tags,
+                
+                cover_img_link=article_obj.cover_img_link,
+                cover_img_cap_en=article_obj.cover_img_cap_en,
+                cover_img_cap_bn=article_obj.cover_img_cap_bn, 
+
+                status=article_obj.article_status
             )
+        
+        return article
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
 
-def approve_article(request: Request, db):
 
-    pass
+def approve_reject_resend_article(request: Request, action: str,  
+                    approveArticleRequest: ApproveArticleRequest,db):
+
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_obj, user_role_list = get_role_list(user_email, db)
+        allowed_roles = [1260, 1453] # editor_role = 1260, sadmin_role = 1453
+
+        if not any(item in user_role_list for item in allowed_roles):
+            raise HTTPException(status_code=403, detail="User not authorized to see this information !") 
+        
+        # get article by article id
+        article_obj = db.query(ArticleModel).filter(
+                ArticleModel.article_id == approveArticleRequest.article_id
+            ).first()
+        if not article_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Not Found !")
+        
+        # category and subcategory name
+        category = db.query(CategoryModel).filter(
+            CategoryModel.category_id ==article_obj.category_id).first()
+        category_name = category.category_name
+
+        subcategory = db.query(SubcategoryModel).filter(
+            SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
+        subcategory_name = subcategory.subcategory_name
+        
+        # if action is not in ["approved", "rejected", "sent_for_edit"]
+        if action not in ["approved", "rejected", "sent_for_edit"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Invalid action !")
+        
+       
+        
+        # opnly approve / reject / resend article if article is in under_review_new status
+        if article_obj.article_status != "under_review_new":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article not in under review status !")
+        
+        # can reject or resend only if decision comment is given 
+        # ("" or " " is not allowed)
+        if action == "rejected" or action == "sent_for_edit":
+            if  len(approveArticleRequest.decision_comment) == 0 or approveArticleRequest.decision_comment.isspace():
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Decision comment is required !")
+            
+        # update article status in article table
+        article_obj.article_status = action
+        db.commit()
+        db.refresh(article_obj)
+
+        # update article status in article submission table
+        article_submission_obj = db.query(ArticleSubmissionModel).filter(
+                ArticleSubmissionModel.article_id == approveArticleRequest.article_id
+            ).first()
+        if not article_submission_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Submission Not Found !")    
+        # opnly approve / reject / resend article if article is in under_review_new status
+        if article_submission_obj.article_status != "under_review_new":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article not in under review status !")
+        
+        article_submission_obj.article_status = action
+        article_submission_obj.decision_comment = approveArticleRequest.decision_comment
+        if action == "approved":
+            article_submission_obj.published_at = datetime.now()
+        else:
+            if action == "rejected":
+                article_submission_obj.rejected_at = datetime.now()
+            if action == "sent_for_edit":
+                article_submission_obj.sent_for_edit_at = datetime.now()
+            article_submission_obj.decision_comment_at = datetime.now()
+
+        db.commit()
+        db.refresh(article_submission_obj)
+
+        # entry will also go to Author and Editor Notification Model
+        notis_text = f"""Your article has been {action} by
+        <b> {current_user.first_name} {current_user.last_name} </b> 
+        ({current_user.email}) <br>
+        on category: <b> {category_name} </b>
+        and subcategory: <b> {subcategory_name} </b> <br>
+        Article Title: <b> {article_obj.title_en} </b>"""
+        notis_color = "green" if action == "approved" else "red" if action == "rejected" else "blue"
+        notis_icon = """<i class="fa-solid fa-file-circle-check"></i>""" if action == "approved" else """<i class="fa-solid fa-file-circle-xmark"></i>""" if action == "rejected" else """<i class="fa-solid fa-file-circle-exclamation"></i>"""
+        new_author_notification = UserAuthorNotificationModel(
+            user_email=article_obj.email,
+            notification_title=f"Article Review Result - {action} !",
+            notification_title_color=notis_color,
+            notification_text=notis_text,
+            notification_type=f"article_review_result_article_id_{article_obj.article_id}",
+            notification_icon=notis_icon,
+            is_read=False,
+            notification_time=datetime.now(),
+            notification_link=f"/{slugify(category_name)}/{slugify(subcategory_name)}/article/{article_obj.article_id}/{article_obj.article_slug}",
+        )
+        db.add(new_author_notification)
+        db.commit()
+        db.refresh(new_author_notification)
+
+        return {"msg": f"Article {action} !"}
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )

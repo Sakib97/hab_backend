@@ -8,7 +8,7 @@ class UserRoleResponse(BaseModel):
     role_code_list: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Model for the user
 class CreateUserResponse(BaseModel):
@@ -23,4 +23,4 @@ class CreateUserResponse(BaseModel):
     role: UserRoleResponse  # Embedding the role data inside the user
 
     class Config:
-        orm_mode = True
+        from_attributes = True
