@@ -68,8 +68,11 @@ class ArticleSubmissionModel(Base):
     
     decision_comment = Column(String)
     decision_comment_at = Column(DateTime, nullable=True)
-    sent_for_edit_at = Column(DateTime, nullable=True) # editor sent for edits to author
-    resubmitted_at = Column(DateTime, nullable=True) # author resubmit with edits
+    
+    # sent_for_edit_at = Column(DateTime, nullable=True) 
+    # resubmitted_at = Column(DateTime, nullable=True) 
+    sent_for_edit_at = Column(String, nullable=True) 
+    resubmitted_at = Column(String, nullable=True) 
 
     published_at = Column(DateTime, nullable=True)
     rejected_at = Column(DateTime, nullable=True)

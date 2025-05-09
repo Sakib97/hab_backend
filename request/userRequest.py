@@ -13,7 +13,7 @@ class UserLoginRequest(BaseModel):
     email: str
     password: str
 
-class EditUserRequest(BaseModel):
+class EditUserRequest(BaseModel): 
     first_name: str
     last_name: str
     password: str

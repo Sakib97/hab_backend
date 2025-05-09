@@ -23,3 +23,19 @@ class AddTagToArticleRequest(BaseModel):
 class ApproveArticleRequest(BaseModel):
     article_id: int
     decision_comment: str
+
+class EditArticleRequest(BaseModel):
+    editor_email: str
+    category_name: str
+    subcategory_name: str
+    tags: str # ex: "['tag1', 'tag2']"
+    new_tag: str # ex: "['new_tag1', 'new_tag2']"
+    title_en: str
+    subtitle_en: str
+    title_bn: str
+    subtitle_bn: str
+    cover_img_link: str
+    cover_img_cap_en: str
+    cover_img_cap_bn: str
+    content_en: str
+    content_bn: str

@@ -109,20 +109,14 @@
 #     print(" is empty")
 # else: 
 #     print(" is not empty")
-import re
+from datetime import datetime
+now1 = datetime.now()
+now_list = []
+now_list.append(str(now1))
 
-string = "Hello World, how are you ? I am fine ! thank you #1? "
-
-# Replace all non-alphanumeric characters (except spaces) with a hyphen
-cleaned_string = re.sub(r'[^\w\s]', '-', string)
-
-# Replace any remaining spaces with hyphens
-cleaned_string = re.sub(r'\s+', '-', cleaned_string)
-
-# Remove any consecutive hyphens and leading/trailing hyphens
-cleaned_string = re.sub(r'-+', '-', cleaned_string).strip('-')
-
-print(cleaned_string)
+now2 = datetime.now()
+now_list.append(str(now2))
+print(now_list)
 
 
 

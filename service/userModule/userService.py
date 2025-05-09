@@ -171,7 +171,7 @@ def user_logout(request: Request, response: Response, db):
     return {"msg": "Logout successful"}
 
 def profile_edit(request: Request, editUserRequest: EditUserRequest, db):
-    try:
+    try: 
         if (len(editUserRequest.first_name) < 2)  or (len(editUserRequest.last_name) < 2):
             raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -212,9 +212,9 @@ def profile_edit(request: Request, editUserRequest: EditUserRequest, db):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-        )
+                status_code=e.status_code,
+                detail=e.detail
+                )
 
 def send_email_background(subject: str, to: str, body: str):
     # Load environment variables from .env file

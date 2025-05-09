@@ -2,11 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request, Response
 from core.jwtHandler import JWTBearer
 from core.database import get_db
 from sqlalchemy.orm import Session
-from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest, ApproveArticleRequest
+from request.articleRequest import CreateArticleRequest, AddTagToArticleRequest, ApproveArticleRequest, EditArticleRequest
 from service.articleModule.articleService import get_unreviewed_article_list_by_editor, \
 get_editor_by_category_id, create_article, add_tag_to_article, approve_reject_resend_article, \
 get_article_by_article_id
-from service.articleModule.articleService_part2 import fetch_approved_article_by_id
+from service.articleModule.articleService_part2 import fetch_approved_article_by_id, get_article_by_email, \
+get_any_article_by_id, get_sent_for_edit_article_by_id, edit_article_by_id
 
 
 article_router = APIRouter(
@@ -33,7 +34,8 @@ async def post_article(request: Request,
     response = await create_article(request,createArticleRequest,db)
     return response
 
-# get unreviewed article by editor_email
+# get unreviewed article by editor_email 
+# (those which sent to this editor)
 @article_router.get("/unrev_article_by_editor_mail/{editor_email}", 
                     dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)
@@ -96,6 +98,69 @@ async def get_approved_article_by_id(
                              db: Session = Depends(get_db)):
     article = fetch_approved_article_by_id(article_id=article_id, db=db)
     return { "article": article}
+
+
+# get all article by author / editor email 
+# (Review History for editor) / (My Articles for Author)
+@article_router.get("/all_article_by_email/{user_type}/{email}", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+
+async def get_all_article_by_email(request: Request,
+                                   user_type: str,
+                                   email: str, 
+                                   page: int = 1,
+                                   limit: int = 3,
+                                   db: Session = Depends(get_db)):
+    total_article_count, article_list = get_article_by_email(request, 
+                                                             user_type=user_type, 
+                                                             email=email, 
+                                                             page=page, 
+                                                             limit=limit, 
+                                                             db=db)
+    return { "totalCount": total_article_count, "articles": article_list}
+
+# get_any_article_by_article_id 
+# (for author/editor History purpose)
+@article_router.get("/any_article/{article_id}", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+async def get_any_article_by_article_id(request: Request,
+                             article_id: int, 
+                             db: Session = Depends(get_db)):
+    article = get_any_article_by_id(request=request, article_id=article_id, db=db)
+    return article
+
+
+# This api is for get articles that Editor sent for edit 
+# and Author wants to edit
+# Accessible by Author
+@article_router.get("/sent_for_edit_article/{article_id}", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+async def get_sent_for_edit_article_by_article_id(request: Request,
+                             article_id: int, 
+                             db: Session = Depends(get_db)):
+    article, category_name, subcategory_name, editor_email, editor_firstname, editor_lastname = get_sent_for_edit_article_by_id(request=request, article_id=article_id, db=db)
+    return {"article": article, "category_name": category_name, 
+            "subcategory_name": subcategory_name, "editor_email": editor_email,
+            "editor_firstname": editor_firstname, "editor_lastname": editor_lastname}
+    
+  
+# This API is for when author submits his edits, 
+# as requested by editor
+@article_router.post("/edit_article/{article_id}", 
+                    dependencies=[Depends(JWTBearer())], 
+                    status_code=status.HTTP_202_ACCEPTED)
+async def edit_article(request: Request,
+                       editRequest: EditArticleRequest,
+                       article_id: int,
+                       db: Session = Depends(get_db)):
+    msg = edit_article_by_id(request=request, 
+                       editArticleRequest=editRequest,
+                       article_id=article_id,
+                       db=db) 
+    return {"message": msg}
 
 # ['Hello', 'newTagRequested']
 

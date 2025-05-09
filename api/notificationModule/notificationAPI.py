@@ -3,7 +3,7 @@ from core.jwtHandler import JWTBearer
 from core.database import get_db
 from sqlalchemy.orm import Session
 from service.notificationModule.notificationService import \
-get_all_notification, get_unread_editor_notis_count, mark_notis_as_clicked
+get_all_notification, get_unread_notis_count, mark_notis_as_clicked
 
 notification_router = APIRouter(
     prefix="/notification", 
@@ -28,13 +28,28 @@ async def get_all_notif(request: Request,
                          dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)
 
+# unread notifications count for editor
 async def get_unread_editor_notif_count(request: Request, 
                                         db: Session = Depends(get_db)):
-    total_unread = get_unread_editor_notis_count(request=request, db=db)
+    total_unread = get_unread_notis_count(request=request, 
+                                                 user_type = "editor", 
+                                                 db=db)
     return {"totalUnread": total_unread}
 
-# @notification_router.get("get_all")
+# unread notifications count for user / author
+@notification_router.get("/unread_general_notis_count", 
+                         dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
 
+async def get_unread_general_notif_count(request: Request, 
+                                        db: Session = Depends(get_db)):
+    total_unread = get_unread_notis_count(request=request, 
+                                          user_type = "general", 
+                                          db=db)
+    return {"totalUnread": total_unread}
+
+
+# mark notification as clicked
 @notification_router.post("/mark_notis_as_clicked/{user_type}/{notis_id}", 
                          dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)

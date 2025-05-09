@@ -93,3 +93,37 @@ class ApprovedArticleResponse(BaseModel):
 
     class Config():
         from_attributes = True
+    
+class HistoryArticleForListResponse(BaseModel):
+    article_id: int 
+    submitted_at: str
+    title_en: str
+    subtitle_en: str
+    cover_img_link: str 
+    article_status: str
+
+    class Config():
+        from_attributes = True
+
+class HistoryArticleDetailsResponse(BaseModel):
+    article_id: int 
+    title_en: str
+    subtitle_en: str
+    category_name: str
+    subcategory_name: str
+    article_status: str
+
+    editor_email: str
+    editor_firstname: str
+    editor_lastname: str
+    
+    submitted_at: str
+    published_at: str
+    rejected_at: str
+    decision_comment: str
+
+    sent_for_edit_at: str
+    resubmitted_at: str
+    
+    class Config():
+        from_attributes = True

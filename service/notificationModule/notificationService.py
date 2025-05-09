@@ -13,7 +13,7 @@ from core.database import get_db
 import random
 from datetime import datetime
 
-def get_all_notification(request: Request, 
+def get_all_notification(request: Request,  
                         user_type: str,
                          page: int, 
                          limit:int, db):
@@ -31,9 +31,9 @@ def get_all_notification(request: Request,
             ).order_by(desc(EditorNotificationModel.notification_time)).offset(offset).limit(limit).all()
             
             # check if notifications exist
-            if not all_notif:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                                detail="No Notifications Found !")
+            # if not all_notif:
+            #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            #                     detail="No Notifications Found !")
 
             total_notis_count = db.query(EditorNotificationModel).filter(
                 EditorNotificationModel.editor_email == user_email
@@ -55,9 +55,9 @@ def get_all_notification(request: Request,
             ).order_by(desc(UserAuthorNotificationModel.notification_time)).offset(offset).limit(limit).all()
             
             # check if notifications exist
-            if not all_notif:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                                detail="No Notifications Found !")
+            # if not all_notif:
+            #     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+            #                     detail="No Notifications Found !")
 
             total_notis_count = db.query(UserAuthorNotificationModel).filter(
                 UserAuthorNotificationModel.user_email == user_email
@@ -76,13 +76,28 @@ def get_all_notification(request: Request,
                 detail=e.detail
                 )
 
-def get_unread_editor_notis_count(request: Request,db):
+def get_unread_notis_count(request: Request, user_type: str, db):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
-        total_unread_notis_count = db.query(EditorNotificationModel).filter(
+        
+        if user_type == "editor":
+            total_unread_notis_count = db.query(EditorNotificationModel).filter(
             EditorNotificationModel.editor_email == user_email,
             EditorNotificationModel.is_read == False
-        ).count()
+                ).count()
+            
+        elif user_type == "general":
+            total_unread_notis_count = db.query(UserAuthorNotificationModel).filter(
+            UserAuthorNotificationModel.user_email == user_email,
+            UserAuthorNotificationModel.is_read == False
+                ).count()
+        else: 
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Invalid user type !")
+        
+        # if not total_unread_notis_count:
+        #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+        #                     detail=f"No data found !{total_unread_notis_count}")
 
         return total_unread_notis_count
 
@@ -91,6 +106,8 @@ def get_unread_editor_notis_count(request: Request,db):
                 status_code=e.status_code,
                 detail=e.detail
                 )
+
+
 
 def mark_notis_as_clicked(request: Request, user_type: str, notis_id: int, db):
     try:

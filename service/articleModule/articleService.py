@@ -169,13 +169,16 @@ def get_unreviewed_article_list_by_editor(request: Request,
         offset = (page - 1) * limit
         unRevArticleSub = db.query(ArticleSubmissionModel).filter(
         ArticleSubmissionModel.editor_email == editor_email,
-        ArticleSubmissionModel.article_status == "under_review_new"
+        # ArticleSubmissionModel.article_status == "under_review_new"
+        ArticleSubmissionModel.article_status.startswith("under_review")
         ).order_by(desc(ArticleSubmissionModel.submitted_at)).offset(offset).limit(limit).all()
         # Sort by date in descending order
 
         total_article_count = db.query(ArticleSubmissionModel).filter(
             ArticleSubmissionModel.editor_email == editor_email,
-            ArticleSubmissionModel.article_status == "under_review_new"
+            # ArticleSubmissionModel.article_status == "under_review_new"
+            ArticleSubmissionModel.article_status.startswith("under_review")
+
             ).count()
 
 
@@ -312,8 +315,12 @@ def get_article_by_article_id(request: Request,
         
         # check if article status is valid
         if article_status != article_obj.article_status:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail="Invalid article status !")
+            if article_obj.article_status in ["approved", "rejected"]:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Article Already Reviewed !")
+            if str(article_obj.article_status).startswith("sent_for_edit"):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail="Article sent for edit !")
         
         # check is right editor is accessing the article 
         article_submission_obj = db.query(ArticleSubmissionModel).filter(
@@ -322,6 +329,7 @@ def get_article_by_article_id(request: Request,
         if not article_submission_obj:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Article Submission Not Found !")
+        
         if article_submission_obj.editor_email != user_email:
             raise HTTPException(status_code=403, detail="User not authorized to see this information !")
         
@@ -368,7 +376,7 @@ def get_article_by_article_id(request: Request,
                 content_en=article_obj.content_en,
                 content_bn=article_obj.content_bn,
                 tags=article_obj.tags,
-                
+
                 cover_img_link=article_obj.cover_img_link,
                 cover_img_cap_en=article_obj.cover_img_cap_en,
                 cover_img_cap_bn=article_obj.cover_img_cap_bn, 
@@ -411,17 +419,31 @@ def approve_reject_resend_article(request: Request, action: str,
         subcategory = db.query(SubcategoryModel).filter(
             SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
         subcategory_name = subcategory.subcategory_name
+
+        # article submission object
+        article_submission_obj = db.query(ArticleSubmissionModel).filter(
+                ArticleSubmissionModel.article_id == approveArticleRequest.article_id
+            ).first()
+        if not article_submission_obj:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Submission Not Found !") 
         
         # if action is not in ["approved", "rejected", "sent_for_edit"]
         if action not in ["approved", "rejected", "sent_for_edit"]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Invalid action !")
         
-       
-        
-        # opnly approve / reject / resend article if article is in under_review_new status
-        if article_obj.article_status != "under_review_new":
+        # see if correct editor accessing correct article
+        if user_email != article_submission_obj.editor_email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="You don't have access to this information !")
+        
+        # only approve / reject / resend article if 
+        # article is in "under_review_new" or "sent_for_edit"  status
+        valid_status =  ["under_review", "sent_for_edit"]
+        if not str(article_obj.article_status).startswith(valid_status[0]) :
+            if not str(article_obj.article_status).startswith(valid_status[1]) :
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Article not in under review status !")
         
         # can reject or resend only if decision comment is given 
@@ -431,33 +453,78 @@ def approve_reject_resend_article(request: Request, action: str,
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Decision comment is required !")
             
-        # update article status in article table
-        article_obj.article_status = action
+        # update article status in ARTICLE table
+        if action == "rejected" or action == "approved":
+            article_obj.article_status = action
+
+        if action == "sent_for_edit":
+            # check the no. of times the editor sent for edit:
+            # first check current status
+            curent_article_status = article_obj.article_status
+            # if the current_status == "under_review_new", 
+            # it's the 1st edit request, so new status = "sent_for_edit_1"
+            if curent_article_status == "under_review_new":
+                article_obj.article_status = "sent_for_edit_1"
+
+            # if current_status contains "under_review_edit" part, 
+            # sepetate the number associated with it, increment by 1,
+            # and reappeand with "sent_for_edit" (ex. "sent_for_edit_2")
+            # Signifies 2nd edit request
+            elif "under_review_edit" in curent_article_status:
+                split_string = curent_article_status.split('_')
+                if len(split_string) > 1:
+                    edit_request_number = int(split_string[-1])
+                    edit_request_number += 1
+                    final_status = "sent_for_edit" + "_" + str(edit_request_number)
+                    article_obj.article_status = final_status
+            
+             
         db.commit()
         db.refresh(article_obj)
-
-        # update article status in article submission table
-        article_submission_obj = db.query(ArticleSubmissionModel).filter(
-                ArticleSubmissionModel.article_id == approveArticleRequest.article_id
-            ).first()
-        if not article_submission_obj:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                            detail="Article Submission Not Found !")    
-        # opnly approve / reject / resend article if article is in under_review_new status
-        if article_submission_obj.article_status != "under_review_new":
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                            detail="Article not in under review status !")
         
-        article_submission_obj.article_status = action
-        article_submission_obj.decision_comment = approveArticleRequest.decision_comment
         if action == "approved":
+            article_submission_obj.article_status = action
             article_submission_obj.published_at = datetime.now()
         else:
             if action == "rejected":
                 article_submission_obj.rejected_at = datetime.now()
+                article_submission_obj.article_status = action
+                article_submission_obj.decision_comment = approveArticleRequest.decision_comment
+                article_submission_obj.decision_comment_at = datetime.now()
+
             if action == "sent_for_edit":
-                article_submission_obj.sent_for_edit_at = datetime.now()
-            article_submission_obj.decision_comment_at = datetime.now()
+                curent_article_sub_status = article_submission_obj.article_status
+                
+                if curent_article_sub_status == "under_review_new":
+                    article_submission_obj.article_status = "sent_for_edit_1"
+                    # time as list
+                    article_submission_obj.sent_for_edit_at = str([ str(datetime.now()) ]) 
+                    article_submission_obj.decision_comment =str([approveArticleRequest.decision_comment]) 
+                
+                elif "under_review_edit" in curent_article_sub_status:
+                    split_string_sub = curent_article_sub_status.split('_')
+                    if len(split_string_sub) > 1:
+                        edit_request_number_sub = int(split_string_sub[-1])
+                        edit_request_number_sub += 1
+                        final_status_sub = "sent_for_edit" + "_" + str(edit_request_number_sub)
+                        article_submission_obj.article_status = final_status_sub
+
+                        # add sent for edit time, 
+                        # sent_for_edit_at format : ["time1", "time2"..]
+                        # first get current sent for edit time list
+                        current_sent_for_edit_time_list = ast.literal_eval(article_submission_obj.sent_for_edit_at)
+                        if isinstance(current_sent_for_edit_time_list, list):
+                            # append this edit request's time
+                            current_sent_for_edit_time_list.append(  str(datetime.now()) )
+                            # update DB
+                            article_submission_obj.sent_for_edit_at = str(current_sent_for_edit_time_list)
+                        
+                        # same for decision comment
+                        currnet_decision_cmnt_list = ast.literal_eval(article_submission_obj.decision_comment)
+                        if isinstance(currnet_decision_cmnt_list, list):
+                            currnet_decision_cmnt_list.append(approveArticleRequest.decision_comment)
+                            article_submission_obj.decision_comment = str(currnet_decision_cmnt_list)
+                
 
         db.commit()
         db.refresh(article_submission_obj)
@@ -469,8 +536,17 @@ def approve_reject_resend_article(request: Request, action: str,
         on category: <b> {category_name} </b>
         and subcategory: <b> {subcategory_name} </b> <br>
         Article Title: <b> {article_obj.title_en} </b>"""
-        notis_color = "green" if action == "approved" else "red" if action == "rejected" else "blue"
-        notis_icon = """<i class="fa-solid fa-file-circle-check"></i>""" if action == "approved" else """<i class="fa-solid fa-file-circle-xmark"></i>""" if action == "rejected" else """<i class="fa-solid fa-file-circle-exclamation"></i>"""
+        notis_color = "green" if action == "approved" else "red" if action == "rejected" else "darkred" if action == "sent_for_edit" else "blue"
+        notis_icon = """<i class="fa-solid fa-file-circle-check"></i>""" if action == "approved" \
+        else """<i class="fa-solid fa-file-circle-xmark"></i>""" if action == "rejected" \
+            else """<i class="fa-solid fa-file-circle-question"></i>""" if action == "sent_for_edit"\
+                else """<i class="fa-solid fa-file-circle-exclamation"></i>"""
+        
+        if action == "approved":
+            notif_link = f"/{slugify(category_name)}/{slugify(subcategory_name)}/article/{article_obj.article_id}/{article_obj.article_slug}"
+        else: # else action == "rejected" or "sent_for_edit"
+            notif_link = f"/profile/my_articles/details?a_id={article_obj.article_id}"
+
         new_author_notification = UserAuthorNotificationModel(
             user_email=article_obj.email,
             notification_title=f"Article Review Result - {action} !",
@@ -480,7 +556,7 @@ def approve_reject_resend_article(request: Request, action: str,
             notification_icon=notis_icon,
             is_read=False,
             notification_time=datetime.now(),
-            notification_link=f"/{slugify(category_name)}/{slugify(subcategory_name)}/article/{article_obj.article_id}/{article_obj.article_slug}",
+            notification_link=notif_link,
         )
         db.add(new_author_notification)
         db.commit()
