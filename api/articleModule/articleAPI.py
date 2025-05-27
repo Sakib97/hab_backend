@@ -8,7 +8,8 @@ get_editor_by_category_id, create_article, add_tag_to_article, approve_reject_re
 get_article_by_article_id
 from service.articleModule.articleService_part2 import fetch_approved_article_by_id, get_article_by_email, \
 get_any_article_by_id, get_sent_for_edit_article_by_id, edit_article_by_id
-
+from service.articleModule.articleService_part3 import get_article_count_by_status, get_published_art_list_by_cat_subcat, \
+get_featured_article_list_by_cat
 
 article_router = APIRouter(
     prefix="/article", 
@@ -91,7 +92,6 @@ async def article_actions(request: Request, action,
 
 # get Approved article by article_id
 @article_router.get("/approved_article/{article_id}", 
-                    # dependencies=[Depends(JWTBearer())],
                       status_code=status.HTTP_200_OK)
 async def get_approved_article_by_id(
                              article_id: int, 
@@ -164,3 +164,50 @@ async def edit_article(request: Request,
 
 # ['Hello', 'newTagRequested']
 
+# ####################
+# from here onwards, all API functions will be in ::
+# :: articleService_part3.py
+# ####################
+# get user's total article count by status
+@article_router.get("/article_count/{status}/{user_type}/{email}", 
+                    dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_200_OK)
+async def get_total_article_count_by_status(request: Request,
+                                       status: str,
+                                       user_type: str,
+                                       email: str, 
+                                       db: Session = Depends(get_db)):
+    article_count = get_article_count_by_status(request=request, 
+                                          status=status, 
+                                          user_type=user_type, 
+                                          email=email, 
+                                          db=db)
+    return {"totalCount": article_count}
+
+# get published and not hidden article list
+# by category and subcategory 
+# API: /published_article_list/bangladesh?subcatSlug=nababi-period&page=1&limit=3
+@article_router.get("/published_article_list/{catSlug}", 
+                      status_code=status.HTTP_200_OK)
+async def get_published_article_list( page: int = 1,
+                                     limit: int = 3,
+                                     catSlug: str = None,
+                                     subcatSlug: str = None,
+                                     db: Session = Depends(get_db)):
+    all_articles, total_article_count = get_published_art_list_by_cat_subcat(page=page,
+                                         limit=limit,
+                                         catSlug=catSlug,
+                                         db=db,
+                                         subcatSlug=subcatSlug)
+    return { "totalCount": total_article_count, "articles": all_articles}
+
+# get feature article by category slug
+@article_router.get("/featured_article_list/{catSlug}", 
+                      status_code=status.HTTP_200_OK)
+async def get_feature_article_by_category_slug(catSlug: str,
+                                               limit: int = 5,
+                                               db: Session = Depends(get_db)):
+    featured_articles = get_featured_article_list_by_cat(catSlug=catSlug,
+                                                         db=db,
+                                                         limit=limit)
+    return {"articles": featured_articles}  

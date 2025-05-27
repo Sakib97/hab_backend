@@ -30,6 +30,9 @@ def fetch_approved_article_by_id(article_id,db):
         if article_obj.article_status != "approved":
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Article is not approved !")
+        if str(article_obj.article_status).startswith("hidden"):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article is currently unavailable !")
 
         
         # category and subcategory name
@@ -111,6 +114,7 @@ def get_article_by_email(request: Request,user_type: str,
                             detail="Invalid user type !")
         
         offset = (page - 1) * limit
+
         if user_type == "author":
             all_articles = db.query(ArticleModel).filter(
                 ArticleModel.email == user_email
@@ -126,6 +130,13 @@ def get_article_by_email(request: Request,user_type: str,
                 article_submission = db.query(ArticleSubmissionModel).filter(
                     ArticleSubmissionModel.article_id == article_obj.article_id
                         ).first()
+                # category and subcategory name
+                category = db.query(CategoryModel).filter(
+                    CategoryModel.category_id ==article_obj.category_id).first()
+                category_name = category.category_name
+                subcategory = db.query(SubcategoryModel).filter(
+                    SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
+                subcategory_name = subcategory.subcategory_name
 
                 submission_time = article_submission.submitted_at if article_submission else None
                 if not submission_time:
@@ -138,13 +149,59 @@ def get_article_by_email(request: Request,user_type: str,
                     subtitle_en=article_obj.subtitle_en,
                     cover_img_link=article_obj.cover_img_link,
                     article_status=article_obj.article_status,
-                    submitted_at=str(submission_time)
+                    submitted_at=str(submission_time),
+                    category_name=category_name,
+                    subcategory_name=subcategory_name
+                )
+                historyArticleList.append(processedArtricle)
+            return total_articles_count, historyArticleList
+
+        if user_type == "editor":
+            all_article_submissions = db.query(ArticleSubmissionModel).filter(
+            ArticleSubmissionModel.editor_email == user_email
+        ).order_by(desc(ArticleSubmissionModel.article_id)).offset(offset).limit(limit).all()
+        
+            total_articles_count = db.query(ArticleSubmissionModel).filter(
+                ArticleSubmissionModel.editor_email == user_email
+            ).count()
+
+            historyArticleList = []
+            for article_submission_obj in all_article_submissions:
+                article_obj = db.query(ArticleModel).filter(
+                    ArticleModel.article_id == article_submission_obj.article_id
+                ).first()
+                if not article_obj:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Article Not Found !")
+                # category and subcategory name
+                category = db.query(CategoryModel).filter(
+                    CategoryModel.category_id ==article_obj.category_id).first()
+                category_name = category.category_name
+                subcategory = db.query(SubcategoryModel).filter(
+                    SubcategoryModel.subcategory_id ==article_obj.subcategory_id).first()
+                subcategory_name = subcategory.subcategory_name
+
+                # published time info
+                submission_time = article_submission_obj.submitted_at if article_submission_obj else None
+                if not submission_time:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Submission time not found !")
+
+                processedArtricle =  HistoryArticleForListResponse(
+                    article_id=article_obj.article_id,
+                    title_en=article_obj.title_en,
+                    subtitle_en=article_obj.subtitle_en,
+                    cover_img_link=article_obj.cover_img_link,
+                    article_status=article_obj.article_status,
+                    submitted_at=str(submission_time),
+                    category_name=category_name,
+                    subcategory_name=subcategory_name
                 )
                 historyArticleList.append(processedArtricle)
 
             return total_articles_count, historyArticleList
         
-        return 
+        return 0, []
 
     except Exception as e:
         raise HTTPException(

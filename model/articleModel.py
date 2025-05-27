@@ -41,11 +41,14 @@ class ArticleModel(Base):
     cover_img_link = Column(Text)
     cover_img_cap_en = Column(Text)
     cover_img_cap_bn = Column(Text)
-    article_status = Column(String(100)) # under_review_new / under_review_resubmit / rejected / published / hidden
-    # submitted_at = Column(DateTime, nullable=True)
-    # updated_at = Column(DateTime, nullable=True)
+    # under_review_new / under_review_edit_1,2.. / 
+    # rejected / approved / hidden / sent_for_edit_1,2..
+    article_status = Column(String(100)) 
     article_slug = Column(String(255))
     tags = Column(String)
+    is_featured = Column(Boolean, default=False)
+    featured_priority = Column(Integer, default=0)
+    featured_until = Column(DateTime, nullable=True)
 
 class ArticleTagModel(Base):
     __tablename__ = "article_tag"

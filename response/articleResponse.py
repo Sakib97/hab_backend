@@ -102,6 +102,9 @@ class HistoryArticleForListResponse(BaseModel):
     cover_img_link: str 
     article_status: str
 
+    category_name: str
+    subcategory_name: str
+
     class Config():
         from_attributes = True
 

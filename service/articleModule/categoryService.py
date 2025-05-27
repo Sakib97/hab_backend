@@ -2,7 +2,7 @@ from model.articleModel import TagModel, CategoryModel, SubcategoryModel
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks, Depends
 from request.categoryRequest import CreateTagRequest, CreateCategoryRequest, CreateSubCategoryRequest
 from service.userModule.userService import get_current_user_profile
-from model.userModel import UserRoleModel
+from model.userModel import UserRoleModel, EditorModel
 import ast
 from service.common.roleFinder import get_role_list
 from sqlalchemy.orm import Session
@@ -187,3 +187,49 @@ async def fetch_subcategory_by_cat_id_or_slug(db,
                 status_code=e.status_code,
                 detail=e.detail
                 )
+
+def get_all_cats_by_mail(request: Request,user_type: str,
+                         email: str, db: Session ):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        user_role_obj, user_role_list = get_role_list(user_email, db) 
+        
+        # check if user is valid
+        if user_email != email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Invalid user email !")
+        
+        if user_type == "editor":
+            # get editor row
+            editor = db.query(EditorModel).filter(EditorModel.user_email == email).first()
+            if not editor:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Editor Not Found !")
+            all_cat_id_list = ast.literal_eval(editor.assigned_cat_id_list)
+            # all_cat_name_list = ast.literal_eval(editor.assigned_cat_name_list)
+            cat_subcat_dict = {}
+            for cat_id in all_cat_id_list:
+                category_obj = db.query(CategoryModel).filter(CategoryModel.category_id == cat_id).first()
+                if not category_obj:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                            detail="Category Not Found !")
+                
+                if category_obj.is_enabled == True:
+                    cat_name = category_obj.category_name
+                    # get all subcategories
+                    all_subcat = db.query(SubcategoryModel) \
+                    .filter(SubcategoryModel.category_id == cat_id) \
+                    .filter(SubcategoryModel.is_enabled == True).all()
+                    subcat_list = []
+                    for subcat in all_subcat:
+                        subcat_list.append(subcat.subcategory_name)
+                    cat_subcat_dict[cat_name] = subcat_list
+                    
+            return cat_subcat_dict
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+    pass

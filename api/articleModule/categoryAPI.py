@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Annotated, List
 from core.database import get_db
 from service.articleModule.categoryService import create_tag, create_category, create_subcategory, \
-fetch_subcategory_by_cat_id_or_slug
+fetch_subcategory_by_cat_id_or_slug, get_all_cats_by_mail
 from core.jwtHandler import JWTBearer
 from request.categoryRequest import CreateTagRequest, CreateCategoryRequest,CreateSubCategoryRequest
 from response.categoryResponse import TagResponse, CategoryResponse, SubCategoryResponse
@@ -72,3 +72,18 @@ async def get_subcategory_by_cat_id_or_slug(
     subcats = await fetch_subcategory_by_cat_id_or_slug(category_slug=category_slug, db=db, slug_or_id="slug")
     # return {"subcats": subcats}
     return subcats
+
+# get all cat and corresponding subcat by user email
+@category_router.get("/get_all_cat_subcat_by_email/{user_type}/{email}", 
+                     dependencies=[Depends(JWTBearer())],
+                     status_code=status.HTTP_200_OK)
+async def get_all_cat_subcat_by_user_email(
+                                            request: Request,
+                                            user_type: str,
+                                            email: str,
+                                            db: Session = Depends(get_db)):
+    all_cats = get_all_cats_by_mail(request=request,
+                                    user_type=user_type,
+                                    email=email,
+                                    db=db)
+    return all_cats
