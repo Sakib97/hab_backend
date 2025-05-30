@@ -169,3 +169,78 @@ def mark_notis_as_clicked(request: Request, user_type: str, notis_id: int, db):
                 status_code=e.status_code,
                 detail=e.detail
                 )
+
+def get_total_unread_unclicked_notis_count(request: Request,  db):
+    try:
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        
+        # get user roles
+        user_role, user_role_list = get_role_list(user_email, db)
+
+
+        combined_notis_count = 0
+        latest_notis = {}
+        if 1260 in user_role_list:
+            # user_type = "editor"
+            total_editor_notis_count = db.query(EditorNotificationModel).filter(
+                EditorNotificationModel.editor_email == user_email,
+                EditorNotificationModel.is_read == False,
+                EditorNotificationModel.is_clicked == False
+            ).count()
+            combined_notis_count += total_editor_notis_count
+            latest_notis["editorNotisCount"] = total_editor_notis_count
+
+
+            # get latest notification for editor
+            latest_editor_notis = db.query(EditorNotificationModel).filter(
+                EditorNotificationModel.editor_email == user_email,
+                EditorNotificationModel.is_read == False,
+                EditorNotificationModel.is_clicked == False
+            ).order_by(desc(EditorNotificationModel.notification_time)).first()
+            if latest_editor_notis:
+                latest_notis['editorLatestNotis'] = {
+                    "notification_title": latest_editor_notis.notification_title,
+                    "notification_time": latest_editor_notis.notification_time,
+                    "notification_link": latest_editor_notis.notification_link,
+                    "notification_type": latest_editor_notis.notification_type
+                }
+            else:
+                latest_notis['editorLatestNotis'] = {}
+        
+        if 1203 in user_role_list or 2024 in user_role_list:
+            # user_type = "author(1203)" or "general(2024)"
+            total_user_author_notis_count = db.query(UserAuthorNotificationModel).filter(
+                UserAuthorNotificationModel.user_email == user_email,
+                UserAuthorNotificationModel.is_read == False,
+                UserAuthorNotificationModel.is_clicked == False
+            ).count()
+            combined_notis_count += total_user_author_notis_count
+            latest_notis["userAuthorNotisCount"] = total_user_author_notis_count
+
+            # get latest notification for author/general
+            latest_author_notis = db.query(UserAuthorNotificationModel).filter(
+                UserAuthorNotificationModel.user_email == user_email,
+                UserAuthorNotificationModel.is_read == False,
+                UserAuthorNotificationModel.is_clicked == False
+            ).order_by(desc(UserAuthorNotificationModel.notification_time)).first()
+            if latest_author_notis:
+                latest_notis['userAuthorLatestNotis'] = {
+                    "notification_title": latest_author_notis.notification_title,
+                    "notification_time": latest_author_notis.notification_time,
+                    "notification_link": latest_author_notis.notification_link,
+                    "notification_type": latest_author_notis.notification_type
+                }
+            else:
+                latest_notis['userAuthorLatestNotis'] = {}
+        # else: 
+        #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+        #                     detail="Invalid user type !")
+        
+        latest_notis["combinedNotisCount"] = combined_notis_count
+        return latest_notis
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )

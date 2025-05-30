@@ -488,8 +488,8 @@ def edit_article_by_id(request: Request,
         article_obj.article_status = f"under_review_edit_{edit_number}"
 
         # Commit changes and refresh the article
-        db.commit()
-        db.refresh(article_obj)
+        # db.commit()
+        # db.refresh(article_obj)
 
         # edit in article submission table
         article_submission = db.query(ArticleSubmissionModel).filter(
@@ -509,7 +509,8 @@ def edit_article_by_id(request: Request,
                         detail="Article submission is not editable !")
         
         article_submission.article_status = f"under_review_edit_{edit_number}"
-        current_resubmitted_at_time_list = ast.literal_eval(article_submission.resubmitted_at)
+        current_resubmitted_at_time_list = ast.literal_eval(article_submission.resubmitted_at) if article_submission.resubmitted_at else []
+        # current_resubmitted_at_time_list = ast.literal_eval(article_submission.resubmitted_at) 
         if isinstance(current_resubmitted_at_time_list, list):
             # append this edit request's time
             current_resubmitted_at_time_list.append(  str(datetime.now()) )
@@ -518,8 +519,8 @@ def edit_article_by_id(request: Request,
         else:
             article_submission.resubmitted_at = str([ str(datetime.now()) ]) 
         
-        db.commit()
-        db.refresh(article_submission)
+        # db.commit()
+        # db.refresh(article_submission)
 
         # new entry in editor notification model
         notif_text = f"""You have a <b> Edited </b> article review request from 
@@ -542,12 +543,17 @@ def edit_article_by_id(request: Request,
         )
 
         db.add(new_editor_notification)
+        # db.commit()
+        # db.refresh(new_editor_notification)
         db.commit()
+        db.refresh(article_obj)
+        db.refresh(article_submission)
         db.refresh(new_editor_notification)
 
         return message
 
     except Exception as e:
+        db.rollback()
         raise HTTPException(
                 status_code=e.status_code,
                 detail=e.detail
