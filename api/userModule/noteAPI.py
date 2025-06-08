@@ -2,17 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends, status, \
 Request, Response, Header, BackgroundTasks, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from typing import Annotated
-import ast
-
 from core.database import get_db
-from core.jwtHandler import verify_password, verify_user_access, create_access_token, create_refreshed_access_token
-# from core.jwtHandler import get_current_user
-from request.userRequest import CreateEditorRequest, CreateUserRequest, UserLoginRequest, EditUserRequest, PasswordResetEmailRequest, PasswordResetTokenRequest
-from model.userModel import UserModel, UserRoleModel, RefreshTokenModel
 from core.jwtHandler import JWTBearer
-from service.userModule.noteService import get_user_notes_by_email
+from service.userModule.noteService import get_user_notes_by_email, send_new_note_to_user
+from request.noteRequest import NewNoteRequest
 
 note_router = APIRouter(
     prefix="/notes", 
@@ -38,3 +31,17 @@ async def get_user_note_by_mail(request: Request,
                                     requester_user_email=requester_user_email,
                                     db=db)
     return notes 
+
+# send note api
+@note_router.post("/send_new_note/{target_user_email}", 
+                         dependencies=[Depends(JWTBearer())],
+                      status_code=status.HTTP_201_CREATED)
+async def send_new_note(request: Request,
+                    target_user_email: str,
+                    newNoteRequest: NewNoteRequest,
+                    db: Session = Depends(get_db)):
+    message = send_new_note_to_user(request=request,
+                                          target_user_email=target_user_email,
+                                          newNoteRequest=newNoteRequest,
+                                          db=db)
+    return message

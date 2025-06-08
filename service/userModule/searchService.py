@@ -1,19 +1,9 @@
 from fastapi import HTTPException, Request, status, Response, BackgroundTasks
 from datetime import datetime
-from jose import JWTError, jwt
-import smtplib
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-import os
-from dotenv import load_dotenv
-from email.message import EmailMessage
-
-from request.userRequest import EditUserRequest
-from response.userResponse import UserRoleResponse, CreateUserResponse
 from model.userModel import UserModel, UserRoleModel, RefreshTokenModel
-from core.jwtHandler import get_password_hash, create_access_token
-
-from core.jwtHandler import JWT_SECRET, JWT_ALGORITHM
+from service.common.roleFinder import get_role_list
 from service.userModule.userService import get_current_user_profile
+import ast
 
 def search_user_by_query(
     request: Request, 
@@ -22,6 +12,8 @@ def search_user_by_query(
 ):
     try:
         current_user, user_email, exp = get_current_user_profile(request, db)
+        # user_role_obj, user_role_list = get_role_list(user_email, db)
+
         if not current_user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                                 detail="Invalid user!")
@@ -37,17 +29,23 @@ def search_user_by_query(
 
         # exclude the current user from the search results
         users = [user for user in users if user.email != user_email]
-        
-        # if not users:
-        #     raise HTTPException(status_code=404, detail="No users found matching the query.")
-        
+        # exclude users who has role of ONLY 2024 (default user role)
+        final_users = []
+        for user in users:
+            # print(f"Checking user: {user.email}")
+            user_role_obj, user_role_list = get_role_list(user.email, db)
+            if 2024 in user_role_list and len(user_role_list) == 1:
+                pass
+            else:
+                final_users.append(user)
+            
         return [
             {
                 "user_id": user.user_id,
                 "full_name": f"{user.first_name} {user.last_name}",
                 "email": user.email,
             }
-            for user in users
+            for user in final_users
         ]
     except Exception as e:
         raise HTTPException(
