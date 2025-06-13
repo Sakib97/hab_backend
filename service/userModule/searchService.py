@@ -41,9 +41,10 @@ def search_user_by_query(
             
         return [
             {
-                "user_id": user.user_id,
+                # "user_id": user.user_id,
                 "full_name": f"{user.first_name} {user.last_name}",
-                "email": user.email,
+                # "email": user.email,
+                "user_slug": user.user_slug,
             }
             for user in final_users
         ]

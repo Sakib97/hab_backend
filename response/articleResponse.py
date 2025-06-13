@@ -71,7 +71,8 @@ class UnrevArticleResponse:
         return f"UnrevArticleResponse(article_id={self.article_id}, title_en={self.title_en}, author_email={self.author_email})"
     
 class ApprovedArticleResponse(BaseModel):
-    author_email: str 
+    # author_email: str 
+    author_slug: str 
     author_firstname: str
     author_lastname: str
     author_image_url: str
@@ -116,7 +117,8 @@ class HistoryArticleDetailsResponse(BaseModel):
     subcategory_name: str
     article_status: str
 
-    editor_email: str
+    # editor_email: str
+    editor_slug: str
     editor_firstname: str
     editor_lastname: str
     

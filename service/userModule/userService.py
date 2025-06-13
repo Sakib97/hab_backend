@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 import smtplib
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 from email.message import EmailMessage
 
 from request.userRequest import EditUserRequest
@@ -13,6 +13,10 @@ from model.userModel import UserModel, UserRoleModel, RefreshTokenModel
 from core.jwtHandler import get_password_hash, create_access_token
 
 from core.jwtHandler import JWT_SECRET, JWT_ALGORITHM
+from service.common.roleFinder import get_role_list
+from model.articleModel import ArticleModel
+from util.getCatSubcatName import get_cat_name, get_subcat_name
+from util.encryptionUtil import xor_encode, xor_decode
 
 async def create_user_account(data, db):
     user = db.query(UserModel).filter(UserModel.email == data.email).first()
@@ -28,7 +32,8 @@ async def create_user_account(data, db):
         is_active=False, 
         is_verified=False,
         created_at = datetime.now(),
-        updated_at = datetime.now()
+        updated_at = datetime.now(),
+        user_slug = xor_encode(data.email)  # Encode the email for user slug
     )
 
     db.add(new_user)
@@ -276,9 +281,9 @@ def reset_pass(token, new_pass, db):
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal server error: {e}"
-        )
+                status_code=e.status_code if hasattr(e, 'status_code') else 500,
+                detail=str(e)
+                )
     
 
 # async def demo_mail():
@@ -309,3 +314,30 @@ def reset_pass(token, new_pass, db):
 #     fm = FastMail(conf)
 #     await fm.send_message(message)
 #     print("message:: ", message)
+
+# get user by email
+def get_user_by_email(email: str, db):
+    try:
+        email = xor_decode(email)  # Decode the email if it was encoded
+        user = db.query(UserModel).filter(UserModel.email == email).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                             detail="User not found")
+        # get user roles
+        user_role_obj, user_role_list = get_role_list(user.email, db)
+
+        userDict = {
+            # "user_id": user.user_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "image_url": user.image_url,
+            "created_at": user.created_at,
+            "roles": user_role_list,
+        }
+        return userDict
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code if hasattr(e, 'status_code') else 500,
+                detail=str(e)
+                )

@@ -109,14 +109,16 @@
 #     print(" is empty")
 # else: 
 #     print(" is not empty")
-from datetime import datetime
-now1 = datetime.now()
-now_list = []
-now_list.append(str(now1))
+# from datetime import datetime
+# now1 = datetime.now()
+# now_list = []
+# now_list.append(str(now1))
 
-now2 = datetime.now()
-now_list.append(str(now2))
-print(now_list)
+# now2 = datetime.now()
+# now_list.append(str(now2))
+# print(now_list)
+
+
 
 
 

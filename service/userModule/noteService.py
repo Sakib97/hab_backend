@@ -10,6 +10,8 @@ from model.notificationModel import UserAuthorNotificationModel
 from sqlalchemy import or_, and_
 from sqlalchemy import desc
 from util.getUserNameFromMail import get_user_name_from_mail
+import base64
+from util.encryptionUtil import xor_decode, xor_encode
 
 def get_user_notes_by_email(
     request: Request, 
@@ -18,6 +20,12 @@ def get_user_notes_by_email(
     db
 ):
     try:
+        # target_user_email = base64.b64decode(target_user_email+ "===").decode('utf-8')
+        # requester_user_email = base64.b64decode(requester_user_email+ "===").decode('utf-8')
+
+        target_user_email = xor_decode(target_user_email)
+        requester_user_email = xor_decode(requester_user_email)
+        
         current_user, user_email, exp = get_current_user_profile(request, db)
         user_role_obj, user_role_list = get_role_list(user_email, db)
         # check if user is valid
@@ -68,9 +76,10 @@ def get_user_notes_by_email(
         
         return {
             "target_user": {
-                "user_id": target_user.user_id,
+                # "user_id": target_user.user_id,
                 "full_name": f"{target_user.first_name} {target_user.last_name}",
-                "email": target_user.email,
+                # "email": target_user.email,
+                "user_slug": target_user.user_slug,
                  "image_url": target_user.image_url if target_user.image_url else None,
                  "roles": target_user_role_list if target_user_role_list else [2024]  # Default role if none found
             },
@@ -79,8 +88,8 @@ def get_user_notes_by_email(
                     "note_id": note.subject_id,
                     "title": note.subject_name,
                     "title_slug": note.subject_slug,
-                    "sender_email": note.sender_email,
-                    "receiver_email": note.receiver_email,
+                    "sender_slug": xor_encode(note.sender_email),
+                    "receiver_slug": xor_encode(note.receiver_email),
                     "created_at": note.created_at,
                 }
                 for note in notes
@@ -100,6 +109,7 @@ def send_new_note_to_user(
     db
 ):
     try:
+        target_user_email = xor_decode(target_user_email)
         note_subject = newNoteRequest.subject_name if newNoteRequest.subject_name else ""
         note_content = newNoteRequest.message_text if newNoteRequest.message_text else ""
         
@@ -164,7 +174,7 @@ def send_new_note_to_user(
             notification_title=f"New Note from {current_user.first_name} {current_user.last_name} !",
             notification_title_color=notis_color,
             notification_text=notif_text,
-            notification_type=f"new_note_subject_id_{new_note.subject_id}_sender_{user_email}",
+            notification_type=f"new_note_subject_id_{new_note.subject_id}_sender_{xor_encode(user_email)}",
             # notification_type=f"new_note_subject_id_{note_subject.subject_id}_sender_{user_email}",
             
             notification_icon=notis_icon,
@@ -193,6 +203,7 @@ def get_note_by_subject_id(
     db
 ):
     try:
+
         current_user, user_email, exp = get_current_user_profile(request, db)
         if not current_user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
@@ -216,9 +227,9 @@ def get_note_by_subject_id(
                 "subject_id": note_subject.subject_id,
                 "subject_name": note_subject.subject_name,
                 "subject_slug": note_subject.subject_slug,
-                "sender_email": note_subject.sender_email,
+                "sender_slug": xor_encode(note_subject.sender_email),
                 "sender_name": get_user_name_from_mail(note_subject.sender_email, db),
-                "receiver_email": note_subject.receiver_email,
+                "receiver_slug": xor_encode(note_subject.receiver_email),
                 "receiver_name": get_user_name_from_mail(note_subject.receiver_email, db),
                 "created_at": note_subject.created_at,
             },
@@ -226,9 +237,9 @@ def get_note_by_subject_id(
                 {
                     "message_id": message.message_id,
                     "message_text": message.message_text,
-                    "sender_email": message.sender_email,
+                    "sender_slug": xor_encode(message.sender_email),
                     "sender_name": get_user_name_from_mail(message.sender_email, db),
-                    "receiver_email": message.receiver_email,
+                    "receiver_slug": xor_encode(message.receiver_email),
                     "receiver_name": get_user_name_from_mail(message.receiver_email, db),
                     "created_at": message.created_at,
                     "is_read": message.is_read,
@@ -253,6 +264,7 @@ def send_note_by_subject_id(
     db
 ):
     try:
+        target_user_email = xor_decode(target_user_email)
         note_content = newNoteRequest.message_text if newNoteRequest.message_text else ""
         
         current_user, user_email, exp = get_current_user_profile(request, db)
@@ -310,7 +322,7 @@ def send_note_by_subject_id(
         
         # notification to the target user
         notif_text = f"""You have a <b> New Note </b> from
-        <b> {current_user.first_name} {current_user.last_name} </b>
+        <b> {current_user.first_name} {current_user.last_name} </b> <br> 
         Subject: <b> {note_subject.subject_name} </b>"""
         notis_color = "#038b0a"
         notis_icon = """<i class="fa-solid fa-envelope"></i>"""

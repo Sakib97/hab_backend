@@ -9,7 +9,8 @@ from core.database import get_db
 from core.jwtHandler import verify_password, verify_user_access, create_access_token, create_refreshed_access_token
 # from core.jwtHandler import get_current_user
 from request.userRequest import CreateEditorRequest, CreateUserRequest, UserLoginRequest, EditUserRequest, PasswordResetEmailRequest, PasswordResetTokenRequest
-from service.userModule.userService import reset_pass, get_reset_token_link, send_email_background, profile_edit, user_logout, create_user_account, get_current_user_profile, add_or_update_refresh_token
+from service.userModule.userService import reset_pass, get_reset_token_link, send_email_background, profile_edit, user_logout, create_user_account, get_current_user_profile, add_or_update_refresh_token, \
+    get_user_by_email
 from service.sadminModule.sadminService import create_editor_or_author
 from model.userModel import UserModel, UserRoleModel, RefreshTokenModel
 from core.jwtHandler import JWTBearer
@@ -220,5 +221,11 @@ async def author_edit(request: Request,
     return response 
 
 
-
+# get user by email
+@user_router.get("/get_user_and_articles/{email}", 
+                 status_code=status.HTTP_200_OK)
+async def get_user_by_mail(email: str,
+                             db: Session = Depends(get_db)):
+    user = get_user_by_email(email, db)
+    return user
 

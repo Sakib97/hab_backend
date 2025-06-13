@@ -5,6 +5,7 @@ from datetime import datetime
 class UserModel(Base):
     __tablename__ = "users"
     user_id = Column(Integer, primary_key=True, index=True)
+    user_slug = Column(String, unique=True)  # Unique slug for the user
     first_name = Column(String(100))
     last_name = Column(String(100))
     email = Column(String(255), unique=True, index=True)

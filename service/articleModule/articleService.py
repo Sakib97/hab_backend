@@ -14,6 +14,10 @@ from core.database import get_db
 import random
 from datetime import datetime
 from util.slugMaker import slugify
+from util.encryptionUtil import xor_encode, xor_decode
+from util.getUserNameFromMail import get_user_name_from_mail
+from sqlalchemy.exc import SQLAlchemyError
+
 
 def get_editor_by_category_id(category_id,db):
     all_editors = db.query(EditorModel).all()
@@ -33,118 +37,229 @@ def get_editor_by_category_id(category_id,db):
     return editors, category_editors_ids
 
 
-async def create_article(request: Request,
-                         data: CreateArticleRequest,
-                         db):
-    try:
-        current_user, user_email, exp = get_current_user_profile(request, db)
+# async def create_article(request: Request,
+#                          data: CreateArticleRequest,
+#                          db):
+#     try:
+#         current_user, user_email, exp = get_current_user_profile(request, db)
         
-        # check if category_id, subcategory_id and tag_ids are valid
-        # category is mandatory field
-        category = db.query(CategoryModel).filter(CategoryModel.category_id == data.category_id).first()
-        if not category:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail="Category Not Found")
+#         # check if category_id, subcategory_id and tag_ids are valid
+#         # category is mandatory field
+#         category = db.query(CategoryModel).filter(CategoryModel.category_id == data.category_id).first()
+#         if not category:
+#             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+#                         detail="Category Not Found")
         
-        # sub-category is mandatory field
-        subcategory = db.query(SubcategoryModel).filter(
-            SubcategoryModel.subcategory_id == data.subcategory_id
-            ).filter(
-              SubcategoryModel.category_id == data.category_id  
-            ).first()
-        if not subcategory:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail="Sub Category Not Found")
+#         # sub-category is mandatory field
+#         subcategory = db.query(SubcategoryModel).filter(
+#             SubcategoryModel.subcategory_id == data.subcategory_id
+#             ).filter(
+#               SubcategoryModel.category_id == data.category_id  
+#             ).first()
+#         if not subcategory:
+#             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+#                         detail="Sub Category Not Found")
         
-        # tag is not mandatory field
-        existing_tag_name_list = ast.literal_eval(data.tags)
-        if(len(existing_tag_name_list) > 0):
-            for tag_name in existing_tag_name_list:
-                tag = db.query(TagModel).filter(TagModel.tag_name == tag_name).first()
-                if not tag:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail="Tag Not Found")
-            final_tag_name_list = existing_tag_name_list.copy()
+#         # tag is not mandatory field
+#         existing_tag_name_list = ast.literal_eval(data.tags)
+#         if(len(existing_tag_name_list) > 0):
+#             for tag_name in existing_tag_name_list:
+#                 tag = db.query(TagModel).filter(TagModel.tag_name == tag_name).first()
+#                 if not tag:
+#                     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+#                         detail="Tag Not Found")
+#             final_tag_name_list = existing_tag_name_list.copy()
                 
-        new_tag_name_list = ast.literal_eval(data.new_tag)
-        if(len(new_tag_name_list) > 0):
-            new_tag_name_list.append('newTagRequested')
-            final_tag_name_list = new_tag_name_list.copy()
+#         new_tag_name_list = ast.literal_eval(data.new_tag)
+#         if(len(new_tag_name_list) > 0):
+#             new_tag_name_list.append('newTagRequested')
+#             final_tag_name_list = new_tag_name_list.copy()
         
-        # new_article_slug = data.title_en.lower().replace(" ", "-")
-        new_article_slug = slugify(data.title_en)
+#         # new_article_slug = data.title_en.lower().replace(" ", "-")
+#         new_article_slug = slugify(data.title_en)
         
-        new_article = ArticleModel(
-            user_id=current_user.user_id,
-            email=user_email, 
-            category_id=data.category_id,
-            subcategory_id=data.subcategory_id,
-            title_en=data.title_en,
-            title_bn=data.title_bn,
-            subtitle_en=data.subtitle_en,
-            subtitle_bn=data.subtitle_bn,
-            content_en=data.content_en,
-            content_bn=data.content_bn,
-            cover_img_link=data.cover_img_link,
-            cover_img_cap_en=data.cover_img_cap_en,
-            cover_img_cap_bn=data.cover_img_cap_bn,
-            article_status="under_review_new",
-            article_slug=new_article_slug,
-            tags=str(final_tag_name_list)
-        )
-        db.add(new_article)
-        db.commit()
-        db.refresh(new_article)
+#         new_article = ArticleModel(
+#             user_id=current_user.user_id,
+#             email=user_email, 
+#             category_id=data.category_id,
+#             subcategory_id=data.subcategory_id,
+#             title_en=data.title_en,
+#             title_bn=data.title_bn,
+#             subtitle_en=data.subtitle_en,
+#             subtitle_bn=data.subtitle_bn,
+#             content_en=data.content_en,
+#             content_bn=data.content_bn,
+#             cover_img_link=data.cover_img_link,
+#             cover_img_cap_en=data.cover_img_cap_en,
+#             cover_img_cap_bn=data.cover_img_cap_bn,
+#             article_status="under_review_new",
+#             article_slug=new_article_slug,
+#             tags=str(final_tag_name_list)
+#         )
+#         db.add(new_article)
+#         db.commit()
+#         db.refresh(new_article)
 
-        # entry also will go to ArticleSubmissionModel
-        # we will assign the articles to the editors RANDOMLY
-        editors, category_editors_ids = get_editor_by_category_id(data.category_id, db)
-        random_editor = random.choice(editors)
+#         # entry also will go to ArticleSubmissionModel
+#         # we will assign the articles to the editors RANDOMLY
+#         editors, category_editors_ids = get_editor_by_category_id(data.category_id, db)
+#         random_editor = random.choice(editors)
 
-        new_article_submission = ArticleSubmissionModel(
-            article_id = new_article.article_id,
-            author_id = current_user.user_id,
-            author_email = user_email,
-            editor_id = random_editor.editor_id,
-            editor_email = random_editor.user_email,
-            article_status = "under_review_new",
-            submitted_at = datetime.now(),
-        )
-        db.add(new_article_submission)
-        db.commit()
-        db.refresh(new_article_submission)
+#         new_article_submission = ArticleSubmissionModel(
+#             article_id = new_article.article_id,
+#             author_id = current_user.user_id,
+#             author_email = user_email,
+#             editor_id = random_editor.editor_id,
+#             editor_email = random_editor.user_email,
+#             article_status = "under_review_new",
+#             submitted_at = datetime.now(),
+#         )
+#         db.add(new_article_submission)
+#         db.commit()
+#         db.refresh(new_article_submission)
 
-        # entry will also go to Author and Editor Notification Model
-        notif_text = f"""You have a new article review request from 
-        <b> {current_user.first_name} {current_user.last_name} </b> 
-        on category: <b> {category.category_name} </b> 
-        and subcategory: <b> {subcategory.subcategory_name} </b> <br> 
-        Article Title: <b> {new_article.title_en} </b>"""
+#         # entry will also go to Author and Editor Notification Model
+#         notif_text = f"""You have a new article review request from 
+#         <b> {current_user.first_name} {current_user.last_name} </b> 
+#         on category: <b> {category.category_name} </b> 
+#         and subcategory: <b> {subcategory.subcategory_name} </b> <br> 
+#         Article Title: <b> {new_article.title_en} </b>"""
         
-        new_editor_notification = EditorNotificationModel(
-            editor_email=random_editor.user_email,
-            notification_title="New Article Review Request !",
-            notification_title_color="blue",
-            notification_text=notif_text,
-            notification_type=f"new_article_review_request_article_id_{new_article.article_id}",
-            notification_icon="""<i class="fa-solid fa-file-circle-exclamation"></i>""",
-            # <i className="fa-solid fa-file-circle-exclamation"></i>
-            is_read=False,
-            notification_time=datetime.now(),
-            notification_link=f"/editor_dashboard/review/article-review/{new_article.article_id}"
-        )
+#         new_editor_notification = EditorNotificationModel(
+#             editor_email=random_editor.user_email,
+#             notification_title="New Article Review Request !",
+#             notification_title_color="blue",
+#             notification_text=notif_text,
+#             notification_type=f"new_article_review_request_article_id_{new_article.article_id}",
+#             notification_icon="""<i class="fa-solid fa-file-circle-exclamation"></i>""",
+#             # <i className="fa-solid fa-file-circle-exclamation"></i>
+#             is_read=False,
+#             notification_time=datetime.now(),
+#             notification_link=f"/editor_dashboard/review/article-review/{new_article.article_id}"
+#         )
 
-        db.add(new_editor_notification)
-        db.commit()
-        db.refresh(new_editor_notification)
+#         db.add(new_editor_notification)
+#         db.commit()
+#         db.refresh(new_editor_notification)
 
-        return {"msg": f"new article sent for review to: {random_editor.user_email}"}
+#         return {"msg": f"new article sent for review to: {get_user_name_from_mail(random_editor.user_email, db)}_{xor_encode(random_editor.user_email)}"}
 
+#     except Exception as e:
+#         raise HTTPException(
+#                 status_code=e.status_code,
+#                 detail=e.detail
+#                 )
+
+
+async def create_article(request: Request, data: CreateArticleRequest, db):
+    try:
+        # Pre-declare variables to use later
+        response_msg = None
+
+        with db.begin():  # Entire block is transactional
+            current_user, user_email, exp = get_current_user_profile(request, db)
+
+            # Validate Category and Subcategory
+            category = db.query(CategoryModel).filter(CategoryModel.category_id == data.category_id).first()
+            if not category:
+                raise HTTPException(status_code=400, detail="Category Not Found")
+
+            subcategory = db.query(SubcategoryModel).filter(
+                SubcategoryModel.subcategory_id == data.subcategory_id,
+                SubcategoryModel.category_id == data.category_id
+            ).first()
+            if not subcategory:
+                raise HTTPException(status_code=400, detail="Sub Category Not Found")
+
+            # Process Tags
+            final_tag_name_list = []
+            existing_tag_name_list = ast.literal_eval(data.tags)
+            if existing_tag_name_list:
+                for tag_name in existing_tag_name_list:
+                    tag = db.query(TagModel).filter(TagModel.tag_name == tag_name).first()
+                    if not tag:
+                        raise HTTPException(status_code=400, detail="Tag Not Found")
+                final_tag_name_list = existing_tag_name_list.copy()
+
+            new_tag_name_list = ast.literal_eval(data.new_tag)
+            if new_tag_name_list:
+                new_tag_name_list.append('newTagRequested')
+                final_tag_name_list = new_tag_name_list.copy()
+
+            # Create Article
+            new_article_slug = slugify(data.title_en)
+            new_article = ArticleModel(
+                user_id=current_user.user_id,
+                email=user_email,
+                category_id=data.category_id,
+                subcategory_id=data.subcategory_id,
+                title_en=data.title_en,
+                title_bn=data.title_bn,
+                subtitle_en=data.subtitle_en,
+                subtitle_bn=data.subtitle_bn,
+                content_en=data.content_en,
+                content_bn=data.content_bn,
+                cover_img_link=data.cover_img_link,
+                cover_img_cap_en=data.cover_img_cap_en,
+                cover_img_cap_bn=data.cover_img_cap_bn,
+                article_status="under_review_new",
+                article_slug=new_article_slug,
+                tags=str(final_tag_name_list)
+            )
+            db.add(new_article)
+            db.flush()  # Get article_id without committing
+
+            # Assign Editor
+            editors, category_editors_ids = get_editor_by_category_id(data.category_id, db)
+            random_editor = random.choice(editors)
+
+            new_article_submission = ArticleSubmissionModel(
+                article_id=new_article.article_id,
+                author_id=current_user.user_id,
+                author_email=user_email,
+                editor_id=random_editor.editor_id,
+                editor_email=random_editor.user_email,
+                article_status="under_review_new",
+                submitted_at=datetime.now(),
+            )
+            db.add(new_article_submission)
+
+            # Notify Editor
+            notif_text = f"""You have a new article review request from 
+            <b> {current_user.first_name} {current_user.last_name} </b> 
+            on category: <b> {category.category_name} </b> 
+            and subcategory: <b> {subcategory.subcategory_name} </b> <br> 
+            Article Title: <b> {new_article.title_en} </b>"""
+
+            new_editor_notification = EditorNotificationModel(
+                editor_email=random_editor.user_email,
+                notification_title="New Article Review Request !",
+                notification_title_color="blue",
+                notification_text=notif_text,
+                notification_type=f"new_article_review_request_article_id_{new_article.article_id}",
+                notification_icon="""<i class="fa-solid fa-file-circle-exclamation"></i>""",
+                is_read=False,
+                notification_time=datetime.now(),
+                notification_link=f"/editor_dashboard/review/article-review/{new_article.article_id}"
+            )
+            db.add(new_editor_notification)
+
+            # Prepare response message INSIDE the transaction
+            response_msg = {
+                "msg": f"new article sent for review to: {get_user_name_from_mail(random_editor.user_email, db)}_{xor_encode(random_editor.user_email)}"
+            }
+
+        # Return AFTER successful commit
+        return response_msg
+
+    except HTTPException as e:
+        # Context manager auto-rolls back; no need for db.rollback()
+        raise e
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail="Database error")
     except Exception as e:
-        raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 def get_unreviewed_article_list_by_editor(request: Request, 
                                 editor_email: str,

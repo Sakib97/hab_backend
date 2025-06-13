@@ -9,7 +9,7 @@ get_article_by_article_id
 from service.articleModule.articleService_part2 import fetch_approved_article_by_id, get_article_by_email, \
 get_any_article_by_id, get_sent_for_edit_article_by_id, edit_article_by_id
 from service.articleModule.articleService_part3 import get_article_count_by_status, get_published_art_list_by_cat_subcat, \
-get_featured_article_list_by_cat
+get_featured_article_list_by_cat, get_articles_by_userSlug
 
 article_router = APIRouter(
     prefix="/article", 
@@ -210,4 +210,17 @@ async def get_feature_article_by_category_slug(catSlug: str,
     featured_articles = get_featured_article_list_by_cat(catSlug=catSlug,
                                                          db=db,
                                                          limit=limit)
-    return {"articles": featured_articles}  
+    return {"articles": featured_articles}
+
+#  get articles by userSlug (encoded email)
+@article_router.get("/articles_by_user/{userSlug}", 
+                      status_code=status.HTTP_200_OK)
+async def get_articles_by_user_slug(userSlug: str,
+                                    page: int = 1,
+                                    limit: int = 3,
+                                    db: Session = Depends(get_db)):
+    articles = get_articles_by_userSlug(userSlug=userSlug,
+                                        page=page,
+                                        limit=limit,
+                                        db=db)
+    return articles

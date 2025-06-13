@@ -300,3 +300,77 @@ def get_featured_article_list_by_cat(catSlug: str,
                 status_code=e.status_code,
                 detail=e.detail
                 )
+
+# get articles by userSlug
+def get_articles_by_userSlug(
+    userSlug: str, 
+    db: Session, 
+    page: int, 
+    limit: int
+):
+    try:
+        # get user by slug
+        user = db.query(UserModel).filter(
+            UserModel.user_slug == userSlug
+        ).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # get articles by user email
+        articles = db.query(
+            ArticleModel.article_id,
+            ArticleModel.title_en,
+            ArticleModel.subtitle_en,
+            ArticleModel.cover_img_link,
+            ArticleSubmissionModel.published_at,
+            CategoryModel.category_name,
+            SubcategoryModel.subcategory_name
+        ).join(
+            ArticleSubmissionModel, 
+            ArticleModel.article_id == ArticleSubmissionModel.article_id
+        ).filter(
+            ArticleSubmissionModel.author_email == user.email,
+            ArticleModel.article_status == "approved"
+        ).join(
+                CategoryModel,
+                ArticleModel.category_id == CategoryModel.category_id
+        ).outerjoin(
+                SubcategoryModel,
+                ArticleModel.subcategory_id == SubcategoryModel.subcategory_id
+        ).order_by(
+            desc(ArticleSubmissionModel.published_at)
+        ).offset((page - 1) * limit).limit(limit).all()
+
+        # article count
+        article_count = db.query(
+            ArticleModel.article_id
+        ).join(
+            ArticleSubmissionModel, 
+            ArticleModel.article_id == ArticleSubmissionModel.article_id
+        ).filter(
+            ArticleSubmissionModel.author_email == user.email,
+            ArticleModel.article_status == "approved"
+        ).count()
+
+        return {
+            "articles": [
+                {
+                    "article_id": article.article_id,
+                    "title": article.title_en,
+                    "subtitle": article.subtitle_en,
+                    "cover_img_link": article.cover_img_link,
+                    "published_at": article.published_at,
+                    "category_name": article.category_name,
+                    "subcategory_name": article.subcategory_name
+                }
+                for article in articles
+            ],
+            "article_count": article_count
+        }
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+        

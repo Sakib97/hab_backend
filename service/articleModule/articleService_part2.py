@@ -15,6 +15,7 @@ from core.database import get_db
 import random
 from datetime import datetime
 from util.slugMaker import slugify
+from util.encryptionUtil import xor_encode
 
 def fetch_approved_article_by_id(article_id,db):
     try:
@@ -61,7 +62,8 @@ def fetch_approved_article_by_id(article_id,db):
          
         
         article = ApprovedArticleResponse(
-            author_email=article_obj.email,
+            # author_email=article_obj.email,
+            author_slug = xor_encode(article_author.email),
             author_firstname=article_author.first_name,
             author_lastname=article_author.last_name,
             author_image_url=article_author.image_url,
@@ -283,7 +285,8 @@ def get_any_article_by_id(request: Request,article_id: int,
             subcategory_name=subcategory_name,
             article_status=article_obj.article_status,
 
-            editor_email=article_submission.editor_email,
+            # editor_email=article_submission.editor_email,
+            editor_slug= xor_encode(article_submission.editor_email),
             editor_firstname=editor_firstname,
             editor_lastname=editor_lastname,
 
