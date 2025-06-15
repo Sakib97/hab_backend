@@ -9,7 +9,8 @@ get_article_by_article_id
 from service.articleModule.articleService_part2 import fetch_approved_article_by_id, get_article_by_email, \
 get_any_article_by_id, get_sent_for_edit_article_by_id, edit_article_by_id
 from service.articleModule.articleService_part3 import get_article_count_by_status, get_published_art_list_by_cat_subcat, \
-get_featured_article_list_by_cat, get_articles_by_userSlug
+get_featured_article_list_by_cat, get_articles_by_userSlug, get_latest_approved_articles, \
+get_featured_articles
 
 article_router = APIRouter(
     prefix="/article", 
@@ -224,3 +225,22 @@ async def get_articles_by_user_slug(userSlug: str,
                                         limit=limit,
                                         db=db)
     return articles
+
+# get latest approved article
+@article_router.get("/latest_approved_article", 
+                      status_code=status.HTTP_200_OK)
+async def get_latest_approved_article(limit: int = 4,
+                                      category_slug: str = None,
+                                      db: Session = Depends(get_db)):
+    articles = get_latest_approved_articles(db=db, limit=limit, 
+                                            catSlug=category_slug)
+    return articles
+
+# get featured articles
+@article_router.get("/featured_articles", 
+                      status_code=status.HTTP_200_OK)
+async def get_overall_featured_articles(limit: int = 5,
+                                db: Session = Depends(get_db)):
+    articles = get_featured_articles(db=db, limit=limit)
+    return articles
+

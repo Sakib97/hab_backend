@@ -373,4 +373,183 @@ def get_articles_by_userSlug(
                 status_code=e.status_code,
                 detail=e.detail
                 )
+
+# get latest approved articles (top 4)
+def get_latest_approved_articles(db: Session, 
+                                 limit: int,
+                                 catSlug: str = None):
+    try:
+        if catSlug is not None:        
+            # get category and subcategory by slug
+            category = db.query(CategoryModel).filter(
+                CategoryModel.category_slug == catSlug
+            ).first()
+            if not category:
+                raise HTTPException(status_code=404, detail="Category not found")
+            cat_id = category.category_id
+        
+        articles = db.query(
+            ArticleModel.article_id,
+            ArticleModel.title_en,
+            ArticleModel.subtitle_en,
+            ArticleModel.cover_img_link,
+            ArticleSubmissionModel.published_at,
+            CategoryModel.category_name,
+            SubcategoryModel.subcategory_name
+        ).join(
+            ArticleSubmissionModel, 
+            ArticleModel.article_id == ArticleSubmissionModel.article_id
+        ).join(
+                CategoryModel,
+                ArticleModel.category_id == CategoryModel.category_id
+        ).outerjoin(
+                SubcategoryModel,
+                ArticleModel.subcategory_id == SubcategoryModel.subcategory_id
+        ).filter(
+            ArticleModel.article_status == "approved",
+            # If category slug is provided, filter by category
+            (ArticleModel.category_id == cat_id) if catSlug else True
+        ).order_by(
+            desc(ArticleSubmissionModel.published_at)
+        ).limit(limit).all()
+
+        return [
+            {
+                "article_id": article.article_id,
+                "title": article.title_en,
+                "subtitle": article.subtitle_en,
+                "cover_img_link": article.cover_img_link,
+                "published_at": article.published_at,
+                "category_name": article.category_name,
+                "subcategory_name": article.subcategory_name
+            }
+            for article in articles
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+
+# get featured articles (top 4)
+def get_featured_articles(db: Session, limit: int = 4):
+    try:
+        # Step 1: Get featured articles
+        featured_articles_query = db.query(
+                ArticleModel.article_id,
+                ArticleModel.title_en,
+                ArticleModel.subtitle_en,
+                ArticleModel.cover_img_link,
+                CategoryModel.category_name,
+                SubcategoryModel.subcategory_name,
+                ArticleSubmissionModel.published_at
+            ).select_from(ArticleModel).join(
+                ArticleSubmissionModel,
+                ArticleModel.article_id == ArticleSubmissionModel.article_id
+            ).join(
+                UserModel,
+                UserModel.email == ArticleModel.email
+            ).join(
+                CategoryModel,
+                ArticleModel.category_id == CategoryModel.category_id
+            ).outerjoin(
+                SubcategoryModel,
+                ArticleModel.subcategory_id == SubcategoryModel.subcategory_id
+            ).filter(
+                ArticleModel.is_featured == True,
+                ArticleModel.article_status == "approved"
+        )
+
+        # Split based on whether priority is set or not
+        featured_with_priority = featured_articles_query.filter(ArticleModel.featured_priority != None)\
+            .order_by(ArticleModel.featured_priority.asc()).all()
+
+        featured_without_priority = featured_articles_query.filter(ArticleModel.featured_priority == None)\
+            .order_by(ArticleSubmissionModel.published_at.desc()).all()
+
+        # Combine both lists
+        final_featured = featured_with_priority + featured_without_priority
+        final_featured = final_featured[:limit]  # take at most 5
+
+        # If is_featured == true is fewer than `limit`, 
+        # fetch latest non-featured articles to fill in
+        if len(final_featured) < limit:
+            # Get IDs of already selected articles to exclude
+            featured_ids = [a.article_id for a in final_featured]
+
+            remaining_needed = limit - len(final_featured)
+            filler_articles = db.query(
+                    ArticleModel.article_id,
+                    ArticleModel.title_en,
+                    ArticleModel.subtitle_en,
+                    ArticleModel.cover_img_link,
+                    CategoryModel.category_name,
+                    SubcategoryModel.subcategory_name,
+                    ArticleSubmissionModel.published_at
+                ).select_from(ArticleModel).join(
+                    ArticleSubmissionModel,
+                    ArticleModel.article_id == ArticleSubmissionModel.article_id
+                ).join(
+                    UserModel,
+                    UserModel.email == ArticleModel.email
+                ).join(
+                    CategoryModel,
+                    ArticleModel.category_id == CategoryModel.category_id
+                ).outerjoin(
+                    SubcategoryModel,
+                    ArticleModel.subcategory_id == SubcategoryModel.subcategory_id
+                ).filter(
+                    ArticleModel.article_status == "approved",
+                    or_(ArticleModel.is_featured == False, 
+                        ArticleModel.is_featured == None),
+                    ~ArticleModel.article_id.in_(featured_ids) # Ensures no duplicates via exclusion with ~
+            ).order_by(ArticleSubmissionModel.published_at.desc()).limit(remaining_needed).all()
+
+            final_featured.extend(filler_articles)
+
+        # If there were no featured articles at all
+        if len(final_featured) == 0:
+            final_featured = db.query(
+                    ArticleModel.article_id,
+                    ArticleModel.title_en,
+                    ArticleModel.subtitle_en,
+                    ArticleModel.cover_img_link,
+                    CategoryModel.category_name,
+                    SubcategoryModel.subcategory_name,
+                    ArticleSubmissionModel.published_at
+                ).select_from(ArticleModel).join(
+                    ArticleSubmissionModel,
+                    ArticleModel.article_id == ArticleSubmissionModel.article_id
+                ).join(
+                    UserModel,
+                    UserModel.email == ArticleModel.email
+                ).join(
+                    CategoryModel,
+                    ArticleModel.category_id == CategoryModel.category_id
+                ).outerjoin(
+                    SubcategoryModel,
+                    ArticleModel.subcategory_id == SubcategoryModel.subcategory_id
+                ).filter(
+                    ArticleModel.article_status == "approved"
+            ).order_by(ArticleSubmissionModel.published_at.desc()).limit(limit).all()
+        
+        return [
+                {
+                    "article_id": a.article_id,
+                    "title_en": a.title_en,
+                    "subtitle_en": a.subtitle_en,
+                    "cover_img_link": a.cover_img_link,
+                    "published_at": a.published_at,
+                    "category_name": a.category_name,
+                    "subcategory_name": a.subcategory_name
+                }
+                for a in final_featured
+            ]
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+
         
