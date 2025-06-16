@@ -4,17 +4,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # they are coming from .env file
-DB_USERNAME = config("db_username")
-DB_PASSWORD = config("db_password")
-DB_HOST = config("db_host")
-DB_PORT = config("db_port")
-DB_NAME = config("db_name")
+# DB_USERNAME = config("db_username")
+# DB_PASSWORD = config("db_password")
+# DB_HOST = config("db_host")
+# DB_PORT = config("db_port")
+# DB_NAME = config("db_name")
 
-# DB_USERNAME = config("db_username2")
-# DB_PASSWORD = config("db_password2")
-# DB_HOST = config("db_host2")
-# DB_PORT = config("db_port2")
-# DB_NAME = config("db_name2")
+DB_USERNAME = config("db_username2")
+DB_PASSWORD = config("db_password2")
+DB_HOST = config("db_host2")
+DB_PORT = config("db_port2")
+DB_NAME = config("db_name2")
 
 # postgresql://<username>:<password>@<host>:<port>/<database_name>
 SQLALCHAMY_DATABASE_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
