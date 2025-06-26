@@ -19,57 +19,63 @@ from util.getCatSubcatName import get_cat_name, get_subcat_name
 from util.encryptionUtil import xor_encode, xor_decode
 
 async def create_user_account(data, db):
-    user = db.query(UserModel).filter(UserModel.email == data.email).first()
-    if user:
-        raise HTTPException(status_code=409, detail="Email is already registered with us.")
-    
-    new_user = UserModel(
-        first_name=data.first_name,
-        last_name=data.last_name,
-        email=data.email,
-        password = get_password_hash(data.password),
-        image_url = "https://i.ibb.co/YZnHSSd/avatar-2.jpg", # default profile image
-        is_active=False, 
-        is_verified=False,
-        created_at = datetime.now(),
-        updated_at = datetime.now(),
-        user_slug = xor_encode(data.email)  # Encode the email for user slug
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    new_user_role = UserRoleModel(
-        user_id = new_user.user_id,
-        email = new_user.email,
-        # role_id = 5,
-        role_name_list = '["ROLE_GENERAL_USER"]',
-        role_code_list = "[2024]"
-    )
-
-    db.add(new_user_role)
-    db.commit()
-    db.refresh(new_user_role)
-
-    # Combine user and role data for the response
-    response_data = CreateUserResponse(
-        user_id= new_user.user_id,
-        first_name= new_user.first_name,
-        last_name= new_user.last_name,
-        email= new_user.email,
-        is_active= new_user.is_active,
-        is_verified= new_user.is_verified,
-        created_at= new_user.created_at,
-        updated_at= new_user.updated_at,
-        role= UserRoleResponse(
-            # role_id= new_user_role.role_id,
-            role_name_list= new_user_role.role_name_list,
-            role_code_list= new_user_role.role_code_list
+    try:
+        user = db.query(UserModel).filter(UserModel.email == data.email).first()
+        if user:
+            raise HTTPException(status_code=409, detail="Email is already registered with us.")
+        
+        new_user = UserModel(
+            first_name=data.first_name,
+            last_name=data.last_name,
+            email=data.email,
+            password = get_password_hash(data.password),
+            image_url = "https://i.ibb.co/YZnHSSd/avatar-2.jpg", # default profile image
+            is_active=False, 
+            is_verified=False,
+            created_at = datetime.now(),
+            updated_at = datetime.now(),
+            user_slug = xor_encode(data.email)  # Encode the email for user slug
         )
-    )
 
-    return response_data
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        new_user_role = UserRoleModel(
+            user_id = new_user.user_id,
+            email = new_user.email,
+            # role_id = 5,
+            role_name_list = '["ROLE_GENERAL_USER"]',
+            role_code_list = "[2024]"
+        )
+
+        db.add(new_user_role)
+        db.commit()
+        db.refresh(new_user_role)
+
+        # Combine user and role data for the response
+        response_data = CreateUserResponse(
+            user_id= new_user.user_id,
+            first_name= new_user.first_name,
+            last_name= new_user.last_name,
+            email= new_user.email,
+            is_active= new_user.is_active,
+            is_verified= new_user.is_verified,
+            created_at= new_user.created_at,
+            updated_at= new_user.updated_at,
+            role= UserRoleResponse(
+                # role_id= new_user_role.role_id,
+                role_name_list= new_user_role.role_name_list,
+                role_code_list= new_user_role.role_code_list
+            )
+        )
+
+        return response_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 def add_or_update_refresh_token(db, user, refresh_token, ref_exp):
     try:

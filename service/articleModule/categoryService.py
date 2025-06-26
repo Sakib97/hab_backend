@@ -43,11 +43,13 @@ async def create_category(request: Request,
         return {"msg": "new category created"}
 
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # also can only be created by sadmin
 async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRequest, db):
@@ -84,11 +86,13 @@ async def create_subcategory(request: Request, addSubCatReq: CreateSubCategoryRe
 
         return {"msg": "new subcategory created"}
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
     
 async def create_tag(request: Request,
                       addTagReq: CreateTagRequest,
@@ -120,11 +124,13 @@ async def create_tag(request: Request,
         else:
             raise HTTPException(status_code=409, detail="User not authorized to make this change !") 
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 async def fetch_subcategory_by_cat_id_or_slug(db, 
                                             category_slug:  Optional[str]  = None,
@@ -182,11 +188,13 @@ async def fetch_subcategory_by_cat_id_or_slug(db,
         return subcategories
 
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 def get_all_cats_by_mail(request: Request,user_type: str,
                          email: str, db: Session ):
@@ -227,9 +235,11 @@ def get_all_cats_by_mail(request: Request,user_type: str,
                     
             return cat_subcat_dict
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
     pass

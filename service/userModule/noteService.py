@@ -95,11 +95,13 @@ def get_user_notes_by_email(
                 for note in notes
             ]
         }
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code if hasattr(e, 'status_code') else 500,
-                detail=str(e)
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # send note to user
 def send_new_note_to_user(
@@ -190,11 +192,13 @@ def send_new_note_to_user(
         
         return "Note & notification sent successfully to the user."
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code if hasattr(e, 'status_code') else 500,
-                detail=str(e)
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # get note by subject id
 def get_note_by_subject_id(
@@ -249,11 +253,13 @@ def get_note_by_subject_id(
             ]
         }
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code if hasattr(e, 'status_code') else 500,
-                detail=str(e)
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # send note to existing subject
 def send_note_by_subject_id(
@@ -345,10 +351,12 @@ def send_note_by_subject_id(
         
         return "Note and notification sent successfully to the user."
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code if hasattr(e, 'status_code') else 500,
-                detail=str(e)
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
         

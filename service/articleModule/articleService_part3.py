@@ -56,11 +56,13 @@ def get_article_count_by_status(request: Request,
         
         return 0
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 def get_published_art_list_by_cat_subcat(page: int,
                                         limit: int,
@@ -143,11 +145,13 @@ def get_published_art_list_by_cat_subcat(page: int,
 
         return all_articles, all_articles_count
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
     
 # get featured article list by category slug
 '''
@@ -295,11 +299,13 @@ def get_featured_article_list_by_cat(catSlug: str,
                 for a in final_featured
             ]
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # get articles by userSlug
 def get_articles_by_userSlug(
@@ -368,11 +374,13 @@ def get_articles_by_userSlug(
             "article_count": article_count
         }
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # get latest approved articles (top 4)
 def get_latest_approved_articles(db: Session, 
@@ -426,11 +434,13 @@ def get_latest_approved_articles(db: Session,
             for article in articles
         ]
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # get featured articles (top 4)
 def get_featured_articles(db: Session, limit: int = 4):
@@ -546,10 +556,12 @@ def get_featured_articles(db: Session, limit: int = 4):
                 }
                 for a in final_featured
             ]
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
         

@@ -87,11 +87,13 @@ def fetch_approved_article_by_id(article_id,db):
 
         return article
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 def get_article_by_email(request: Request,user_type: str,
                          email: str, page: int, limit:int, db: Session):
@@ -205,11 +207,13 @@ def get_article_by_email(request: Request,user_type: str,
         
         return 0, []
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 # this is for Article History Purpose
 def get_any_article_by_id(request: Request,article_id: int,
@@ -300,11 +304,13 @@ def get_any_article_by_id(request: Request,article_id: int,
              
         )
         return article
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 def get_sent_for_edit_article_by_id(request: Request,
@@ -364,11 +370,13 @@ def get_sent_for_edit_article_by_id(request: Request,
         return article_obj, category_name, subcategory_name, article_submission.editor_email, editor_firstname, editor_lastname
     
     
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 # This is for when author submits his edits, 
@@ -555,9 +563,10 @@ def edit_article_by_id(request: Request,
 
         return message
 
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        db.rollback()
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

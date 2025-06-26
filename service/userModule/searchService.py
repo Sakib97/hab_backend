@@ -48,9 +48,11 @@ def search_user_by_query(
             }
             for user in final_users
         ]
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
    

@@ -70,11 +70,13 @@ def get_all_notification(request: Request,
                     db.commit()
                     db.refresh(notification)
             return total_notis_count, all_notif
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
-                status_code=e.status_code,
-                detail=e.detail
-                )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 def get_unread_notis_count(request: Request, user_type: str, db):
     try:

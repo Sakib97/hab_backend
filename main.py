@@ -8,6 +8,7 @@ from api.articleModule.articleAPI import article_router
 from api.notificationModule.notificationAPI import notification_router
 from api.userModule.searchAPI import search_router
 from api.userModule.noteAPI import note_router
+from api.articleModule.commentAPI import comment_router
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -32,6 +33,7 @@ app.include_router(article_router, prefix="/api/v1")
 app.include_router(notification_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(note_router, prefix="/api/v1")
+app.include_router(comment_router, prefix="/api/v1")
 
 
 # @app.on_event("startup")
@@ -55,4 +57,4 @@ def read_root():
     # deactivate venv: deactivate
     # see all inatalled libraries: pip list"
     # run uvicorn server: uvicorn main:app --reload --port 8080
-
+# python -u "d:\History_And_Beyond\hab_backend\core\tempCodeRunnerFile.py"
