@@ -6,6 +6,7 @@ class ReactionType(Enum):
     WOW = "wow"
     SAD = "sad"
     ANGRY = "angry"
+    DISLIKE = "dislike"
 
     @classmethod
     def from_str(cls, reaction_str):
