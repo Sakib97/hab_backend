@@ -6,11 +6,12 @@ HistoryArticleDetailsResponse
 from service.userModule.userService import get_current_user_profile
 from model.userModel import EditorModel, UserModel
 from model.articleModel import ArticleModel, ArticleSubmissionModel
+from model.commentModel import CommentModel
 from model.notificationModel import EditorNotificationModel, UserAuthorNotificationModel
 import ast
 from service.common.roleFinder import get_role_list
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from core.database import get_db
 import random
 from datetime import datetime
@@ -60,7 +61,12 @@ def fetch_approved_article_by_id(article_id,db):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
                             detail="Published time not found !")
          
-        
+        #  article comment count (only non-hidden comments)
+        article_comment_count = db.query(func.count(CommentModel.comment_id)).filter(
+            CommentModel.article_id == article_obj.article_id,
+            CommentModel.is_hidden == False
+        ).scalar() or 0
+
         article = ApprovedArticleResponse(
             # author_email=article_obj.email,
             author_slug = xor_encode(article_author.email),
@@ -83,6 +89,7 @@ def fetch_approved_article_by_id(article_id,db):
             cover_img_link=article_obj.cover_img_link,
             cover_img_cap_en=article_obj.cover_img_cap_en,
             cover_img_cap_bn=article_obj.cover_img_cap_bn,
+            article_comment_count=article_comment_count
         )
 
         return article
@@ -93,7 +100,7 @@ def fetch_approved_article_by_id(article_id,db):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        )
+        ) 
 
 def get_article_by_email(request: Request,user_type: str,
                          email: str, page: int, limit:int, db: Session):

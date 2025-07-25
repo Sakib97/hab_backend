@@ -27,3 +27,30 @@ def get_user_name_from_mail(email: str, db) -> str:
                 status_code=e.status_code if hasattr(e, 'status_code') else 500,
                 detail=str(e)
                 )
+
+# get user from email
+def get_user_from_email(email: str, db) -> UserModel:
+    """
+    Retrieves a UserModel instance based on the user's email address.
+
+    Args:
+        email (str): The email address of the user.
+        db: The database session.
+
+    Returns:
+        UserModel: The user model instance if found, otherwise None.
+    """
+    try:
+        user = db.query(UserModel).filter(UserModel.email == email).first()
+        if user:
+            return user
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code if hasattr(e, 'status_code') else 500,
+                detail=str(e)
+                )

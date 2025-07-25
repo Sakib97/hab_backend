@@ -6,6 +6,9 @@ from util.reactionUtil import is_valid_reaction
 from model.commentModel import ArticleReactionModel, CommentReactionModel, CommentModel
 from datetime import datetime
 from sqlalchemy import func
+from response.commentResponse import CommentListResponse
+from request.commentRequest import PostCommentRequest
+from util.getUserNameFromMail import get_user_from_email
 
 # article or comment reaction submission
 def article_or_comment_react(request: Request,
@@ -158,3 +161,114 @@ def get_reaction_counts(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while fetching reactions."
         )
+
+
+def get_comments_by_article_id(article_id: int, 
+                               page: int,
+                               limit: int,
+                               db: Session,
+                               request: Request = None):
+    """
+    Fetches all comments for a given article ID.
+    """
+    try:
+        # Validate article_id
+        if not isinstance(article_id, int) or article_id <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid article ID")
+        
+        # Fetch comments with pagination with date sorting
+        offset = (page - 1) * limit
+        comments = db.query(CommentModel).filter(
+            CommentModel.article_id == article_id,
+            CommentModel.is_hidden == False,  # Only fetch visible comments
+            CommentModel.parent_comment_id == None  # Only fetch top-level comments
+        ).order_by(CommentModel.created_at.desc()).offset(offset).limit(limit).all()
+        
+        # Convert comments to response model
+        comments_response = []
+        for comment in comments:
+            commenter = get_user_from_email(comment.user_email, db)
+            
+            # # get comment replies by comment_id (if any)
+            # replies = db.query(CommentModel).filter(
+            #     CommentModel.parent_comment_id == comment.comment_id,
+            #     CommentModel.is_hidden == False  # Only fetch visible replies
+            # ).order_by(CommentModel.created_at.desc()).offset(offset).all()
+            response = {
+                "article_id": comment.article_id,
+                "comment_id": comment.comment_id,
+                "user_slug": comment.user_slug,
+                "user_name": f'{commenter.first_name} {commenter.last_name}' if
+                commenter else None,  # Assuming user_slug is the name, adjust as needed
+                "user_image_url": commenter.image_url if commenter else None,  # Placeholder, replace with actual user image URL if available
+                "parent_comment_id": comment.parent_comment_id,
+                "comment_text": comment.comment_text,
+                "created_at": str(comment.created_at),
+                # "is_hidden": comment.is_hidden,
+                "comment_reaction_count": get_reaction_counts(
+                    db=db,
+                    reactPlace="comment",
+                    content_id=comment.comment_id,
+                    request=request
+                ),
+            }
+            comments_response.append(response)
+            total_comments_count = len(comments_response)
+
+        if not comments:
+            # If no comments found, return an empty list
+    
+            return [], 0
+        return comments_response, total_comments_count
+    
+    # except HTTPException as e:
+    #     raise e
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail="An error occurred while fetching comments."
+    #     )
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+    
+
+# post comment on an article
+def post_comment_by_id(request: Request,
+                       article_id: int,
+                       post_comment_req: PostCommentRequest,
+                       db: Session):
+    try:
+        # Validate article_id
+        if not isinstance(article_id, int) or article_id <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid article ID")
+        
+        # Get current user profile
+        current_user, user_email, exp = get_current_user_profile(request, db)
+        
+        # Create a new comment instance
+        new_comment = CommentModel(
+            article_id=article_id,
+            user_email=user_email,
+            user_slug=current_user.user_slug,
+            comment_text=post_comment_req.comment_text,
+            parent_comment_id=int(post_comment_req.parent_comment_id) if post_comment_req.parent_comment_id else None,
+            created_at=datetime.now(),
+            is_hidden=False  # Default to not hidden
+        )
+        
+        # Add the new comment to the session and commit
+        db.add(new_comment)
+        db.commit()
+        db.refresh(new_comment)
+        
+        return {"message": "Comment posted successfully"}
+    
+    except Exception as e:
+        raise HTTPException(
+                status_code=e.status_code,
+                detail=e.detail
+                )
+    

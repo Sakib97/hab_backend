@@ -92,6 +92,8 @@ class ApprovedArticleResponse(BaseModel):
     cover_img_cap_en: str 
     cover_img_cap_bn: str
 
+    article_comment_count: int
+
     class Config():
         from_attributes = True
     
