@@ -184,6 +184,13 @@ def get_comments_by_article_id(article_id: int,
             CommentModel.parent_comment_id == None  # Only fetch top-level comments
         ).order_by(CommentModel.created_at.desc()).offset(offset).limit(limit).all()
         
+        # get_all_commeents_count
+        total_comments_count = db.query(CommentModel).filter(
+            CommentModel.article_id == article_id,
+            CommentModel.is_hidden == False,  # Only count visible comments
+            CommentModel.parent_comment_id == None  # Only count top-level comments
+        ).count()
+
         # Convert comments to response model
         comments_response = []
         for comment in comments:
@@ -213,7 +220,7 @@ def get_comments_by_article_id(article_id: int,
                 ),
             }
             comments_response.append(response)
-            total_comments_count = len(comments_response)
+            # total_comments_count = len(comments_response)
 
         if not comments:
             # If no comments found, return an empty list
